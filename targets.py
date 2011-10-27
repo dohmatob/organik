@@ -6,7 +6,7 @@ import os
 class TARGET:
     def __init__(self, **kwargs):
         self._content = dict()
-        map(lambda param: self.set(param, kwargs[param]), kwargs)
+        map(lambda param: self.set(param, kwargs[param]), kwargs) # XXX TODO: should only set params defined in self._params !
 
     def set(self, param, value):
         """
@@ -55,6 +55,13 @@ class TARGET_TCP_PORT(TARGET):
     """
     _category = "TARGET_TCP_PORT"
     _params = list(["ip", "port"])
+    
+class TARGET_SNMP_SERVICE(TARGET):
+    """
+    Ecapsulates a target SNMP service
+    """
+    _category = "TARGET_SNMP_SERVICE"
+    _params = list(["ip", "port", "version", "community", "sysdescr", "sysname"])
 
 
 class TargetTest(unittest.TestCase):

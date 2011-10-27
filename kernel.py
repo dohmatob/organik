@@ -203,7 +203,7 @@ class Kernel:
         self.log("running %s on %s" %(plugin_name, target.__str__()), debug=True)
         pcallback = PluginCallback(plugin_name, logfile=self._env['logfile'], publish_method=self.publish, reportVuln_method=self.reportVuln)
         self._env['plugins'][plugin_name].run(target, pcallback)
-        self.log("Done running %s on %s" %(plugin_name, target.__str__()), debug=True)
+        self.log("done running %s on %s" %(plugin_name, target.__str__()), debug=True)
 
     def grabTask(self):
         try:
@@ -234,10 +234,10 @@ class Kernel:
 
     def signalHandler(self, signum, frame):
         if signum == signal.SIGINT:
-            self.log("recv'd SIGINT ..", debug=True)
+            self.log("recv'd SIGINT", debug=True)
             self.finish()
         else:
-            self.log('unhandled signum: %s; shutting down ..' %(signum), debug=True)
+            self.log('unhandled signum: %s; shutting down' %(signum), debug=True)
             self.finish()
 
     def registerSignalHandlers(self):
