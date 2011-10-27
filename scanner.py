@@ -8,11 +8,11 @@ import kernel
 import targets
 
 if __name__ == '__main__':
-    parser = OptionParser(version="w0rkz of d0hm4t06 3. d0p91m4\r\n(c) 2011")
+    parser = OptionParser(version="w0rkz 0f d0hm4t06 3. d0p91m4\r\n(c) 2011")
     parser.add_option("--target",
                       action="store",
                       dest="target",
-                      default="localhost",
+                      default="127.0.0.1",
                       help="""specify target to scan"""
                       )
     parser.add_option("--nbworkers",

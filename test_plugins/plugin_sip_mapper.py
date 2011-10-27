@@ -6,17 +6,32 @@ import random
 import traceback
 import re
 import helper
+from ip import IpIterator
+import errno
 
 DESCRIPTION="""Plugin for SIP (UDP) discovery"""
 AUTHOR="""d0hm4t06 3. d0p91m4"""
 AUTHOR_EMAIL="""gmdopp@gmail.com"""
 
 def targetrule(target):
-    return target.getCategory() == "TARGET_IP"
+    return target.getCategory() == "TARGET_IPRANGE"
 
 class SIPProbe:
     _CHUNK_SIZE = 8192
-
+    # regex black-magik \L/
+    _PKT_FIELD_PATTERNS = dict({"via":re.compile("^via: (?P<via>.*)", re.MULTILINE),
+                          "to":re.compile("^To: (?P<to>.*)", re.MULTILINE),
+                          "from":re.compile("^From: (?P<from>.*)", re.MULTILINE),
+                          "callid":re.compile("^Call-ID: (?P<callid>.*)", re.MULTILINE),
+                          "contentlength":re.compile("^Content-Length: (?P<contentlength>.*)", re.MULTILINE),
+                          "cseq":re.compile("^CSeq: (?P<cseq>\d*)", re.MULTILINE),
+                          "maxforwards":re.compile("^Max-Forwards: (?P<maxorwards>.*)", re.MULTILINE),
+                          "accept":re.compile("^Accept: (?P<accept>.*)", re.MULTILINE),
+                          "contact":re.compile("^Contact: (?P<contact>.*)", re.MULTILINE),
+                          "useragent":re.compile("(?:Server|User-Agent): (?P<useragent>.*)", re.MULTILINE),
+                          "allow":re.compile("^Allow: (?P<allow>.*)", re.MULTILINE),
+                          "supported":re.compile("^Supported: (?P<supported>.*)", re.MULTILINE)})
+                         
     def __init__(self, bindingip="0.0.0.0", localport=5060, selecttime=0.005, sockettimeout=3, pcallback=None):
         self._sockettimeout = sockettimeout
         self._localport = localport
@@ -26,6 +41,7 @@ class SIPProbe:
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._sock.settimeout(self._sockettimeout)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        self._donetargets = list()
 
     def log(self, msg, debug=False):
         if self._pcallback:
@@ -33,8 +49,27 @@ class SIPProbe:
         else:
             print msg        
         
+    def bind(self):
+      while self._localport < 65536:
+          try:
+              self._sock.bind((self._bindingip,self._localport))
+              break
+          except socket.error:
+              self.log("could'nt bind to localport %s" %(self._localport))
+              self._localport += 1
+      self._externalip = "127.0.0.1"
+      if self._localport == 65535:
+        self.log("WARNING: could not bind to any local port")
+        return -1
+      try:
+          self._externalip = socket.gethostbyname(socket.gethostname())
+      except socket.error:
+          pass
+          
     def getResponse(self):
         buf, srcaddr = self._sock.recvfrom(self._CHUNK_SIZE)
+        if srcaddr in self._donetargets:
+          return
         if re.search("^(?:OPTIONS|INVITE|REGISTER)", buf, re.MULTILINE):
             if srcaddr == (self._externalip, self._localport):
                 self.log("our own pkt ..")
@@ -42,36 +77,40 @@ class SIPProbe:
                 self.log("SIP req from %s:%s" %(srcaddr))
             return
         else:
-            server_name = helper.fingerPrintPacket(buf)["name"][0]
-            self.log("SIP (UDP) server '%s' at %s:5060" %(server_name, srcaddr[0])) 
-            return True
-
-    def execute(self, target_ip):
-        self._localport, self._sock = helper.bindto(self._bindingip, self._localport, self._sock)
+            match = self._PKT_FIELD_PATTERNS["useragent"].search(buf)
+            if match:
+                self.log("SIP (UDP) server '%s' at %s:5060" %(match.group("useragent").rstrip("\r\n"), srcaddr[0])) 
+                self._donetargets.append(srcaddr)
+                
+    def execute(self, target_iprange):
+        ipiter = IpIterator(target_iprange)
+        if self.bind() == -1:
+          return
         self._externalip = "127.0.0.1"
-        try:
-            self._externalip = socket.gethostbyname(socket.gethostname())
-        except socket.error:
-            pass
-        fromname = "sipvicious"
-        fromaddr = "sip:100@1.1.1.1"
+        fromname = "quatre-vingt-quinze"
+        fromaddr = "sip:ping@1.1.1.1"
+        toaddr = "sip:pong@1.1.1.1"
+        nomoretoscan = False
         while True:
             try:
                 r, w, x = select.select([self._sock], list(), list(), self._selecttime)
-                if r:
+                if r: # somebody talking; let's see what they saying ..
                     try:
-                        if self.getResponse():
-                            break
+                        self.getResponse()
                     except socket.error:
-                        print traceback.format_exc()
                         continue
-                else:
-                    dsthost = (target_ip, 5060)
+                else: # nobody talking; let's rule ..
+                    if nomoretoscan:
+                        try:
+                            self.getResponse()
+                        except socket.error:
+                            break
+                    try:
+                        dsthost = (ipiter.next(), 5060)
+                    except StopIteration:
+                        nomoretoscan = True # targets exhausted: send no more probes ..
+                        continue      
                     branchunique = random.getrandbits(80)
-                    localtag = random.getrandbits(80)
-                    callid = '%s' % (random.getrandbits(80))
-                    contact = None
-                    toaddr = fromaddr
                     req = helper.makeRequest("REGISTER",
                                       fromaddr,
                                       toaddr,
@@ -91,7 +130,7 @@ class SIPProbe:
         
 def run(target, pcallback):
     sipprobe = SIPProbe(pcallback=pcallback)
-    sipprobe.execute(target.get("ip"))
+    sipprobe.execute(target.get("iprange"))
 
 if __name__ == '__main__':
     sip = SIPProbe()
