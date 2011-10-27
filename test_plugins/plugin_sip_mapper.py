@@ -14,11 +14,31 @@ AUTHOR="""d0hm4t06 3. d0p91m4"""
 AUTHOR_EMAIL="""gmdopp@gmail.com"""
 
 def targetrule(target):
+    """
+    Run this plugin on targets in the "TARGET_IPRANGE" category
+    """
     return target.getCategory() == "TARGET_IPRANGE"
 
+
 class SIPProbe:
+    """
+    Scan SIP (UDP) -enabled devices
+    """
     _CHUNK_SIZE = 8192
-    # regex black-magik \L/
+    # SIP pkt regexp black-magik \L/
+    """
+    A SIP pkt looks as follows:
+    SIP/2.0 404 Not found
+    Via: SIP/2.0/UDP 512472208890754321164178:5060;branch=z9hG4bK-2486524293;received=192.168.46.1;rport=5061
+    From: sip:ping@1.1.1.1
+    To: sip:pong@1.1.1.1;tag=as66e097b0
+    Call-ID: 127.0.0.1
+    CSeq: 1 REGISTER
+    User-Agent: Asterisk PBX 1.6.0.26-FONCORE-r78
+    Allow: INVITE, ACK, CANCEL, OPTIONS, BYE, REFER, SUBSCRIBE, NOTIFY, INFO
+    Supported: replaces, timer
+    Content-Length: 0
+    """
     _PKT_FIELD_PATTERNS = dict({"via":re.compile("^via: (?P<via>.*)", re.MULTILINE),
                           "to":re.compile("^To: (?P<to>.*)", re.MULTILINE),
                           "from":re.compile("^From: (?P<from>.*)", re.MULTILINE),
@@ -38,10 +58,10 @@ class SIPProbe:
         self._bindingip = bindingip
         self._selecttime = selecttime
         self._pcallback = pcallback
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # we do UDP
         self._sock.settimeout(self._sockettimeout)
-        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self._donetargets = list()
+        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1) # so we can send broadcasts
+        self._donetargets = list() # list of servers on which we've confirmed SIP
 
     def log(self, msg, debug=False):
         if self._pcallback:
@@ -50,23 +70,29 @@ class SIPProbe:
             print msg        
         
     def bind(self):
-      while self._localport < 65536:
-          try:
-              self._sock.bind((self._bindingip,self._localport))
-              break
-          except socket.error:
-              self.log("could'nt bind to localport %s" %(self._localport))
-              self._localport += 1
-      self._externalip = "127.0.0.1"
-      if self._localport == 65535:
-        self.log("WARNING: could not bind to any local port")
-        return -1
-      try:
-          self._externalip = socket.gethostbyname(socket.gethostname())
-      except socket.error:
-          pass
+        """
+        Bind to local address = (externalip, localport)
+        """
+        while self._localport < 65536:
+            try:
+                self._sock.bind((self._bindingip,self._localport))
+                break
+            except socket.error:
+                self.log("could'nt bind to localport %s" %(self._localport))
+                self._localport += 1
+        self._externalip = "127.0.0.1"
+        if self._localport == 65535:
+            self.log("WARNING: could not bind to any local port")
+            return -1
+        try:
+            self._externalip = socket.gethostbyname(socket.gethostname())
+        except socket.error:
+            pass
           
     def getResponse(self):
+        """
+        Read incoming response from socket
+        """
         buf, srcaddr = self._sock.recvfrom(self._CHUNK_SIZE)
         if srcaddr in self._donetargets:
           return
@@ -83,6 +109,9 @@ class SIPProbe:
                 self._donetargets.append(srcaddr)
                 
     def execute(self, target_iprange):
+        """
+        Scan
+        """
         ipiter = IpIterator(target_iprange)
         if self.bind() == -1:
           return
