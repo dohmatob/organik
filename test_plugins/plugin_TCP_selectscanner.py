@@ -145,7 +145,7 @@ class SelectScanner:
                 self.freeSock(port)
                 self._open_ports.append(port)
                 if self._pcallback:
-                    self._pcallback.publish(targets.TARGET_TCP_PORT(ip=self._target, port=port))
+                    self._pcallback.feedback(targets.TARGET_TCP_PORT(ip=self._target, port=port))
                 else:
                     self.logInfo('found TCP service at %s:%s' %(ip, port))
             except socket.error, error:

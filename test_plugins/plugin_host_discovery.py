@@ -12,7 +12,7 @@ def result_callback(host, scan_data):
     try:
         if scan_data['scan'][host]['status']['state'] in list(['up']):
             if plugin_callback:
-                plugin_callback.publish(targets.TARGET_IP(ip=host))
+                plugin_callback.feedback(targets.TARGET_IP(ip=host))
             else:
                 print '%s: up'
     except:

@@ -3,10 +3,15 @@ import sys
 import glob
 import traceback
 import signal
+import time
 import threading
 import multiprocessing
 
 AUTHOR="""d0hm4t06 3. d0p91m4"""
+
+def pretty_time():
+    t = time.ctime().split(" ")
+    return "-".join(list([t[3], t[0], t[2], t[1], t[4]]))
 
 class PluginCallback:
     """
@@ -23,12 +28,13 @@ class PluginCallback:
         self._reportVuln_method = reportVuln_method
         self._reportInfo_method = reportInfo_method
 
-    def log(self, msg, debug=False):
-        print msg
+    def log(self, msg):
+        formatted_msg = "%s %s" %(pretty_time(), msg)
+        print formatted_msg
         if self._logfile:
             try:
                 fh = open (self._logfile, 'a')
-                fh.write(msg + "\r\n")
+                fh.write(formatted_msg + "\r\n")
                 fh.close()
             except:
                 self.logDebug("WARNING: caught exception while writing logfile %s (see traceback below)\n%s" %(self._logfile, traceback.format_exc()))
@@ -38,9 +44,6 @@ class PluginCallback:
     
     def logInfo(self, msg):
         self.log("[%s] -INFO- %s" %(self._plugin_name, msg))
-
-    def publish(self, target):
-        self.feedback(target)
 
     def feedback(self, target):
         self.logDebug("new target %s" %(target.__str__()))
@@ -76,11 +79,12 @@ class Kernel:
         """
         Just log
         """
-        print msg
+        formatted_msg = "%s %s" %(pretty_time(), msg)
+        print formatted_msg
         if self._logfile:
             try:
                 fh = open (self._logfile, 'a')
-                fh.write(msg + "\r\n")
+                fh.write(formatted_msg + "\r\n")
                 fh.close()
             except:
                 self.logDebug("WARNING: caught exception while writing logfile %s (see traceback below)\n%s" %(self._logfile, traceback.format_exc()))
@@ -230,6 +234,7 @@ class Kernel:
         """
         self.logDebug("starting")
         self.registerSignals()
+        self.logDebug("pid: %s" %(os.getpid()))
         self.logDebug("logfile: %s" %(self._logfile))
         self.logDebug("plugin directory: %s" %(plugin_dir))
         self.loadPlugins(plugin_dir)

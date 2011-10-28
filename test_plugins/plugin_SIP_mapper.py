@@ -98,12 +98,13 @@ class SIPProbe:
             pass
           
     def handleDiscovery(self, ip, port, useragent):
-        self.logInfo("SIP (UDP) server '%s' at %s:%s" %(useragent, ip, port)) 
         if self._pcallback:
-            self._pcallback.publish(targets.TARGET_SIP_SERVICE(ip=ip, port=port, useragent=useragent,))
-            self._pcallback.publish(targets.TARGET_IP(ip=ip,))
+            self._pcallback.feedback(targets.TARGET_SIP_SERVICE(ip=ip, port=port, useragent=useragent,))
+            self._pcallback.feedback(targets.TARGET_IP(ip=ip,))
             self._donetargets.append((ip,port))
-                
+        else:
+            self.logInfo("SIP (UDP) server '%s' at %s:%s" %(useragent, ip, port)) 
+
     def getResponse(self):
         """
         Read incoming response from socket

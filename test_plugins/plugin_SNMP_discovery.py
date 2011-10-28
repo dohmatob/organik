@@ -78,7 +78,7 @@ class SnmpProbe:
                       syscontact)
                 self.logInfo(raw_output) # XXX report info/vuln
                 if self._pcallback:
-                    self._pcallback.publish(targets.TARGET_SNMP_SERVICE(ip=target_ip, 
+                    self._pcallback.feedback(targets.TARGET_SNMP_SERVICE(ip=target_ip, 
                                                                         port=161, # XXX other UDP ports ?
                                                                         version=version,
                                                                         community=community,
