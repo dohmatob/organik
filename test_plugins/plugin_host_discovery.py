@@ -23,6 +23,6 @@ def run(info_iprange, pcallback):
     plugin_callback = pcallback
     nmapper = nmap.PortScannerAsync()
     nmapper.scan(hosts=info_iprange.get('iprange'), arguments='-sP', callback=result_callback)
-    pcallback.log('waiting for nmap to start yielding ..', debug=True)
+    pcallback.logDebug('waiting for nmap to start yielding ..')
     nmapper.wait()
 

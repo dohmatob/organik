@@ -43,9 +43,15 @@ class SelectScanner:
             self._timeout = timeout
         self._timeout_per_port = self._timeout/len(self._ports)
 
-    def log(self, message):
+    def logDebug(self, message):
         if self._pcallback:
-            self._pcallback.log(message)
+            self._pcallback.logDebug(message)
+        else:
+            print message
+
+    def logDeInfo(self, message):
+        if self._pcallback:
+            self._pcallback.logDebug(message)
         else:
             print message
 
@@ -81,9 +87,9 @@ class SelectScanner:
             elif len(token) == 2:
                 ports += range(int(token[0]), 1 + int(token[1]))
             else:
-                self.log('invalid portslot %s' %(portslot))
+                self.logDebug('WARNING: invalid portslot %s' %(portslot))
         else:
-            self.log('invalid portslot type' %(type(portslot)))
+            self.logDebug('WARNING: invalid portslot type' %(type(portslot)))
         self._ports += ports
         return ports
 
@@ -92,7 +98,7 @@ class SelectScanner:
 
     def execute(self):
         if self._verbose:
-            self.log('scanning %s TCP ports on target %s; timeout is %ss' %(len(self._ports), self._target, self._timeout))
+            self.logDebug('scanning %s TCP ports on target %s; timeout is %ss' %(len(self._ports), self._target, self._timeout))
         for port in self._ports:
             if not self.outOfResources():
                 # configure socket
@@ -125,7 +131,7 @@ class SelectScanner:
             vid = 1 # XXX dummy
             self._pcallback.reportVuln(vid, raw_output)
         else:
-            self.log('OPEN PORTS FOUND: %s' %(self._open_ports))
+            self.logInfo('OPEN PORTS FOUND: %s' %(self._open_ports))
 
     def freeSock(self, port):
         del self._socks[port]
@@ -141,7 +147,7 @@ class SelectScanner:
                 if self._pcallback:
                     self._pcallback.publish(targets.TARGET_TCP_PORT(ip=self._target, port=port))
                 else:
-                    self.log('found TCP service at %s:%s' %(ip, port))
+                    self.logInfo('found TCP service at %s:%s' %(ip, port))
             except socket.error, error:
                 if error.errno == errno.ENOTCONN:
                     continue
@@ -153,7 +159,7 @@ class SelectScanner:
     def mainLoop(self, timeout):
         socks = self._socks.values()
         if self._verbose:
-            self.log('scanning a batch of %s ports; timeout is %ss' %(len(socks), timeout))
+            self.logInfo('scanning a batch of %s ports; timeout is %ss' %(len(socks), timeout))
         while timeout > 0 and socks:
             starttime = time.time()
             try:
@@ -163,7 +169,7 @@ class SelectScanner:
                 if wsocks:
                     self.handle(wsocks, read=False)
                 if xsocks:
-                    self.log('error')
+                    self.logDebug('WARNING: error on sock object')
                 timeout -= time.time() - starttime
                 socks = self._socks.values()
             except:
@@ -171,7 +177,7 @@ class SelectScanner:
                 break
         self._socks = dict() # cleanup
         if self._verbose:
-            self.log('done.')
+            self.logDebug('done.')
                 
 
 if __name__ == '__main__':

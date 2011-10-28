@@ -64,9 +64,15 @@ class SIPProbe:
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1) # so we can send broadcasts
         self._donetargets = list() # list of servers on which we've confirmed SIP
 
-    def log(self, msg, debug=False):
+    def logDebug(self, msg):
         if self._pcallback:
-            self._pcallback.log(msg, debug=debug)
+            self._pcallback.logDebug(msg)
+        else:
+            print msg        
+
+    def logInfo(self, msg):
+        if self._pcallback:
+            self._pcallback.logInfo(msg)
         else:
             print msg        
         
@@ -79,20 +85,20 @@ class SIPProbe:
                 self._sock.bind((self._bindingip,self._localport))
                 break
             except socket.error:
-                self.log("couldn't bind to localport %s" %(self._localport), debug=True)
+                self.logDebug("couldn't bind to localport %s" %(self._localport))
                 self._localport += 1
         self._externalip = "127.0.0.1"
         if self._localport == 65535:
-            self.log("WARNING: couldn't bind to any local port", debug=True)
+            self.logDebug("WARNING: couldn't bind to any local port")
             return -1
-        self.log("bound to %s:%s" %(self._bindingip, self._localport), debug=True)
+        self.logDebug("bound to %s:%s" %(self._bindingip, self._localport))
         try:
             self._externalip = socket.gethostbyname(socket.gethostname())
         except socket.error:
             pass
           
     def handleDiscovery(self, ip, port, useragent):
-        self.log("SIP (UDP) server '%s' at %s:%s" %(useragent, ip, port)) 
+        self.logInfo("SIP (UDP) server '%s' at %s:%s" %(useragent, ip, port)) 
         if self._pcallback:
             self._pcallback.publish(targets.TARGET_SIP_SERVICE(ip=ip, port=port, useragent=useragent,))
             self._pcallback.publish(targets.TARGET_IP(ip=ip,))
@@ -107,9 +113,9 @@ class SIPProbe:
           return
         if re.search("^(?:OPTIONS|INVITE|REGISTER)", buf, re.MULTILINE):
             if srcaddr == (self._externalip, self._localport):
-                self.log("our own pkt ..")
+                self.logDebug("our own pkt ..")
             else:
-                self.log("SIP req from %s:%s" %(srcaddr))
+                self.logDebug("SIP req from %s:%s" %(srcaddr))
             return
         else:
             match = self._PKT_FIELD_PATTERNS["useragent"].search(buf)
@@ -158,7 +164,7 @@ class SIPProbe:
                     try:
                         bytes = helper.mysendto(self._sock, req, dsthost)
                     except socket.error:
-                        self.log("error while sending SIP packet", debug=True)
+                        self.logDebug("WARNING: error while sending SIP packet")
                         pass
             except:
                 print traceback.format_exc()

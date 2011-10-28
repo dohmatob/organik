@@ -12,6 +12,6 @@ def run(target, pcallback=None):
     try:
         url = "http://%s:%s" %(target.get("ip"), target.get("port"))
         response = urllib2.urlopen(url)
-        pcallback.log("%s is powered by '%s'" %(url, response.headers["server"]))
+        pcallback.logInfo("%s is powered by '%s'" %(url, response.headers["server"]))
     except:
         pass

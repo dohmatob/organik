@@ -4,6 +4,7 @@ import sys
 import math
 import threading
 import multiprocessing
+import signal
 import targets
 
 DESCRIPTION="""SNMP discovery module"""
@@ -16,7 +17,6 @@ def targetrule(target):
     """
     return target.getCategory() == "TARGET_IP" 
 
-
 class SnmpProbe:
     """
     NET-SNMP plugin for probing SNMP-enabled systems
@@ -27,9 +27,15 @@ class SnmpProbe:
     def __init__(self, pcallback=None):
         self._pcallback = pcallback
         
-    def log(self, msg, debug=False):
+    def logDebug(self, msg):
         if self._pcallback:
-            self._pcallback.log(msg, debug=debug) 
+            self._pcallback.logDebug(msg)
+        else:
+            print msg
+
+    def logInfo(self, msg):
+        if self._pcallback:
+            self._pcallback.logInfo(msg)
         else:
             print msg
 
@@ -41,7 +47,7 @@ class SnmpProbe:
                 break
             if (target_ip,version,) in self._discoveries:
                 continue
-            self.log("probing %s for SNMPv%s (%s)" %(target_ip, version, community), debug=True)
+            self.logDebug("probing %s for SNMPv%s (%s)" %(target_ip, version, community))
             session = netsnmp.Session(Version=version,
                                       DestHost=target_ip,
                                       Community=community,)
@@ -70,7 +76,7 @@ class SnmpProbe:
                       hrmemorysize,
                       syslocation,
                       syscontact)
-                self.log(raw_output) # XXX report info/vuln
+                self.logInfo(raw_output) # XXX report info/vuln
                 if self._pcallback:
                     self._pcallback.publish(targets.TARGET_SNMP_SERVICE(ip=target_ip, 
                                                                         port=161, # XXX other UDP ports ?

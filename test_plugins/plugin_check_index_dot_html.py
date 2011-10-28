@@ -11,6 +11,6 @@ def targetrule(target):
 def run(target, pcallback):
     try:
         response = urllib2.urlopen("http://%s:%s/index.html" %(target.get("ip"), target.get("port")))
-        pcallback.log("%s:%s serves /index.html" %(target.get("ip"), target.get("port")))
+        pcallback.logInfo("%s:%s serves /index.html" %(target.get("ip"), target.get("port")))
     except:
-        pcallback.log("%s:%s doesn't serve /index.html" %(target.get("ip"), target.get("port")))
+        pcallback.logInfo("%s:%s doesn't serve /index.html" %(target.get("ip"), target.get("port")))
