@@ -27,5 +27,7 @@ if __name__ == '__main__':
                       )
     options,_ = parser.parse_args()
     os.chdir(os.path.dirname(sys.argv[0]))
-    k = kernel.Kernel(logfile='/tmp/kernel.log')
+    os.system("mkdir -p var/log/")
+    logfile = "var/log/scanner-%s.log" %(os.getpid())
+    k = kernel.Kernel(logfile=logfile)
     k.bootstrap(options.plugindir, targets.TARGET_IPRANGE(iprange=options.target), int(options.nbworkers))

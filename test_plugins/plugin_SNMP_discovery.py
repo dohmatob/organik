@@ -1,5 +1,9 @@
 import netsnmp
 import re
+import sys
+import math
+import threading
+import multiprocessing
 import targets
 
 DESCRIPTION="""SNMP discovery module"""
@@ -18,78 +22,84 @@ class SnmpProbe:
     NET-SNMP plugin for probing SNMP-enabled systems
     """
     _VERSIONS = xrange(1,3) # XXX TODO: add support for version 3 (authentication-based)
-    _COMMUNITY_PATTERN = re.compile("^(?P<community>.+)", re.MULTILINE)
-    
-    def __init__(self,
-                 request_timeout=500000, # default = 500000 microseconds
-                 retries=3,
-                 pcallback=None):
-        self._pcallback = pcallback
-        self._request_timeout = request_timeout
-        self._retries = retries
+    _COMMUNITIES = list(["public", "private"])
 
+    def __init__(self, pcallback=None):
+        self._pcallback = pcallback
+        
     def log(self, msg, debug=False):
         if self._pcallback:
             self._pcallback.log(msg, debug=debug) 
         else:
             print msg
 
-    def execute(self, target_ip, community_file):                
-        try:
-            fh = open(community_file, 'r')
-        except:
-            self.log("WARNING: could'nt read community file %s" %(community_file), debug=True)
-            return
-        doneversions = list()
-        for match in self._COMMUNITY_PATTERN.finditer(fh.read()):
-            community = match.group("community")
+    def probe(self, q):
+        while True:
+            try:
+                target_ip, version, community = q.get()
+            except:
+                break
+            if (target_ip,version,) in self._discoveries:
+                continue
+            self.log("probing %s for SNMPv%s (%s)" %(target_ip, version, community), debug=True)
+            session = netsnmp.Session(Version=version,
+                                      DestHost=target_ip,
+                                      Community=community,)
+            oids = netsnmp.VarList(netsnmp.Varbind("sysDescr", 0), 
+                                   netsnmp.Varbind("sysName", 0), 
+                                   netsnmp.Varbind("sysUpTime", 0),
+                                   netsnmp.Varbind("hrMemorySize", 0),
+                                   netsnmp.Varbind("sysLocation", 0),
+                                   netsnmp.Varbind("sysContact", 0),) 
+            sysdescr, sysname, sysuptime, hrmemorysize, syslocation, syscontact = session.get(oids)
+            if sysdescr:
+                self._discoveries.append((target_ip,version,))
+                raw_output = """%s serves SNMPv%s (%s):
+                sysDescr    : %s
+                sysName     : %s
+                sysUpTime   : %s
+                hrMemorySize: %s
+                sysLocation : %s
+                sysContact  : %s
+                """ %(target_ip,
+                      version,
+                      community,
+                      sysdescr,
+                      sysname,
+                      sysuptime,
+                      hrmemorysize,
+                      syslocation,
+                      syscontact)
+                self.log(raw_output) # XXX report info/vuln
+                if self._pcallback:
+                    self._pcallback.publish(targets.TARGET_SNMP_SERVICE(ip=target_ip, 
+                                                                        port=161, # XXX other UDP ports ?
+                                                                        version=version,
+                                                                        community=community,
+                                                                        sysdescr=sysdescr,
+                                                                        sysname=sysname))
+
+    def execute(self, target_ip, communities=None):
+        if not communities:
+            communities = self._COMMUNITIES
+        self._discoveries = multiprocessing.Manager().list()
+        q = multiprocessing.JoinableQueue()
+        for community in communities:
             for version in self._VERSIONS:
-                if version in doneversions:
-                    continue
-                self.log("probing %s for SNMPv%s (%s)" %(target_ip, version, community), debug=True)
-                session = netsnmp.Session(Version=version,
-                                          DestHost=target_ip,
-                                          Community=community,
-                                          Timeout=self._request_timeout,
-                                          Retries=self._retries,
-                                          )
-                oids = netsnmp.VarList(netsnmp.Varbind("sysDescr", 0), 
-                                       netsnmp.Varbind("sysName", 0), 
-                                       netsnmp.Varbind("sysUpTime", 0),
-                                       netsnmp.Varbind("hrMemorySize", 0),
-                                       netsnmp.Varbind("sysLocation", 0),
-                                       netsnmp.Varbind("sysContact", 0),) 
-                sysdescr, sysname, sysuptime, hrmemorysize, syslocation, syscontact = session.get(oids)
-                if sysdescr:
-                    doneversions.append(version)
-                    raw_output = """%s serves SNMPv%s (%s):
-                    sysDescr    : %s
-                    sysName     : %s
-                    sysUpTime   : %s
-                    hrMemorySize: %s
-                    sysLocation : %s
-                    sysContact  : %s
-                    """ %(target_ip,
-                          version,
-                          community,
-                          sysdescr,
-                          sysname,
-                          sysuptime,
-                          hrmemorysize,
-                          syslocation,
-                          syscontact)
-                    self.log(raw_output) # XXX report info/vuln
-                    if self._pcallback:
-                        self._pcallback.publish(targets.TARGET_SNMP_SERVICE(ip=target_ip, 
-                                                                            port=161, # XXX other UDP ports ?
-                                                                            version=version,
-                                                                            community=community,
-                                                                            sysdescr=sysdescr,
-                                                                            sysname=sysname))
-                                                                            
-                    
+                q.put((target_ip,version,community))
+        for z in xrange(max(int(math.floor(len(communities)/float(4)))*len(self._VERSIONS), 1)):
+            worker = threading.Thread(target=self.probe, args=(q,),)
+            worker.daemon = True
+            worker.start()
+        
 
 def run(target, pcallback):
-    snmpprobe = SnmpProbe(request_timeout=50000, retries=1, pcallback=pcallback)
-    snmpprobe.execute(target.get("ip"), "etc/snmp/common_communities.txt")
+    snmpprobe = SnmpProbe(pcallback=pcallback)
+    try:
+        fh = open("etc/snmp/common_communities.txt", 'r')
+        communities = [line.rstrip('\r\n') for line in fh.readlines()]
+        fh.close()
+    except:
+        communities = None
+    snmpprobe.execute(target.get("ip"), communities=communities)
     

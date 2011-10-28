@@ -8,6 +8,7 @@ import re
 import helper
 from ip import IpIterator
 import errno
+import targets
 
 DESCRIPTION="""Plugin for SIP (UDP) discovery"""
 AUTHOR="""d0hm4t06 3. d0p91m4"""
@@ -78,17 +79,25 @@ class SIPProbe:
                 self._sock.bind((self._bindingip,self._localport))
                 break
             except socket.error:
-                self.log("could'nt bind to localport %s" %(self._localport))
+                self.log("couldn't bind to localport %s" %(self._localport), debug=True)
                 self._localport += 1
         self._externalip = "127.0.0.1"
         if self._localport == 65535:
-            self.log("WARNING: could not bind to any local port")
+            self.log("WARNING: couldn't bind to any local port", debug=True)
             return -1
+        self.log("bound to %s:%s" %(self._bindingip, self._localport), debug=True)
         try:
             self._externalip = socket.gethostbyname(socket.gethostname())
         except socket.error:
             pass
           
+    def handleDiscovery(self, ip, port, useragent):
+        self.log("SIP (UDP) server '%s' at %s:%s" %(useragent, ip, port)) 
+        if self._pcallback:
+            self._pcallback.publish(targets.TARGET_SIP_SERVICE(ip=ip, port=port, useragent=useragent,))
+            self._pcallback.publish(targets.TARGET_IP(ip=ip,))
+            self._donetargets.append((ip,port))
+                
     def getResponse(self):
         """
         Read incoming response from socket
@@ -105,8 +114,7 @@ class SIPProbe:
         else:
             match = self._PKT_FIELD_PATTERNS["useragent"].search(buf)
             if match:
-                self.log("SIP (UDP) server '%s' at %s:5060" %(match.group("useragent").rstrip("\r\n"), srcaddr[0])) 
-                self._donetargets.append(srcaddr)
+                self.handleDiscovery(srcaddr[0], srcaddr[1], match.group("useragent").rstrip("\r\n"))
                 
     def execute(self, target_iprange):
         """
