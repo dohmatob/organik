@@ -56,12 +56,21 @@ class TARGET_TCP_PORT(TARGET):
     _category = "TARGET_TCP_PORT"
     _params = list(["ip", "port"])
     
+
 class TARGET_SNMP_SERVICE(TARGET):
     """
     Ecapsulates a target SNMP service
     """
     _category = "TARGET_SNMP_SERVICE"
     _params = list(["ip", "port", "version", "community", "sysdescr", "sysname"])
+
+
+class TARGET_SIP_SERVICE(TARGET):
+    """
+    Encapsulates a target SIP service
+    """
+    _category = "TARGET_SIP_SERVICE"
+    _params = list(["ip", "port", "useragent"])
 
 
 class TargetTest(unittest.TestCase):
