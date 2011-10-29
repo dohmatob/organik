@@ -50,10 +50,10 @@ class PluginCallback:
         self._feedback_method(target)
         
     def reportVuln(self, vid, raw_output):
-        self._reportVuln_method(vid, raw_output)
+        self._reportVuln_method(self._plugin_name, vid, raw_output)
 
     def reportInfo(self, info):
-        self._reportInfo_method(info)
+        self._reportInfo_method(self._plugin_name, info)
         
 
 class Kernel:
@@ -132,17 +132,19 @@ class Kernel:
             self.loadPlugin(plugin_name)
         self.logDebug("loaded: %s plugins out of %s" %(len(self._plugins) - loaded_plugins, len(plugins_to_load)))
         
-    def reportVuln(self, vid, raw_output):
+    def reportVuln(self, plugin_name, vid, raw_output):
         """
         Report vuln to front-end
         """
-        pass
+        pass # XXX TODO: code
+        
 
-    def reportInfo(self, info):
+    def reportInfo(self, plugin_name, info):
         """
         Report Info to fronr-end
         """
-        pass
+        pass # XXX TODO: code
+        
 
     def targetExists(self, target):
         """

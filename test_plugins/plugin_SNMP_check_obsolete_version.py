@@ -9,4 +9,4 @@ def targetrule(target):
     return target.getCategory() == "TARGET_SNMP_SERVICE" and str(target.get("version")) in list(["1","2","2c"])
 
 def run(target, pcallback):
-    pcallback.logInfo("%s serves obsolete SNMPv%s (%s); this is insecure --should upgrade to version 3" %(target.get("ip"), target.get("version"), target.get("community"))) # XXX report vuln!
+    pcallback.logInfo("%s serves obsolete SNMPv%s (%s); this is insecure --should upgrade to version 3" %(target.get("ip"), target.get("version"), target.get("community"))) # XXX report vuln! 
