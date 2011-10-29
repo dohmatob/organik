@@ -56,7 +56,11 @@ class SnmpProbe:
                                    netsnmp.Varbind("sysUpTime", 0),
                                    netsnmp.Varbind("hrMemorySize", 0),
                                    netsnmp.Varbind("sysLocation", 0),
-                                   netsnmp.Varbind("sysContact", 0),) 
+                                   netsnmp.Varbind("sysContact", 0),)
+            """
+            command-line example: snmpget -v1 -c private 192.168.46.1 sysDescr.0 sysName.0 \ 
+            sysUpTime.0 hrMemorySize.0 sysContact.0 sysLocation.0
+            """
             sysdescr, sysname, sysuptime, hrmemorysize, syslocation, syscontact = session.get(oids)
             if sysdescr:
                 self._discoveries.append((target_ip,version,))

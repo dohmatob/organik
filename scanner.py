@@ -4,6 +4,7 @@ from optparse import OptionParser
 import multiprocessing
 import os
 import sys
+import time
 import engine
 import targets
 
@@ -28,6 +29,8 @@ if __name__ == '__main__':
     options,_ = parser.parse_args()
     os.chdir(os.path.dirname(sys.argv[0]))
     os.system("mkdir -p var/log/")
-    logfile = "var/log/scanner-%s.log" %(os.getpid())
+    timestamp = time.ctime().split(' ')
+    timestamp = '-'.join(list([timestamp[2],timestamp[1],timestamp[4]]))
+    logfile = "var/log/scanner-%s-%s.log" %(timestamp,os.getpid())
     k = engine.Kernel(logfile=logfile)
     k.bootstrap(options.plugindir, targets.TARGET_IPRANGE(iprange=options.target), int(options.nbworkers))
