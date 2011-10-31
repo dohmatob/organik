@@ -113,7 +113,7 @@ class Kernel:
                     self.logDebug("WARNING: %s.py doesn't implement method '%s' of the plugin API; plugin will not be loaded" %(plugin_name, method))
                     break
         except:
-            self.logDebug("WARNING: caught exception while loading %s; plugin will not be loaded" %(plugin_name))
+            self.logDebug("WARNING: caught exception while loading %s (see traceback below); plugin will not be loaded\nq" %(plugin_name, traceback.format_exc()))
     
     def loadPlugins(self, plugin_dir, plugin_regexp="plugin_*.py"):
         """

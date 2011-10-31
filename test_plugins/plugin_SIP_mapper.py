@@ -5,8 +5,7 @@ import time
 import random
 import traceback
 import re
-import helper
-from ip import IpIterator
+from helper import makeRequest, scanlist, ip4range, getRange as getPortRange, createTag, mysendto
 import errno
 import targets
 
@@ -111,7 +110,7 @@ class SIPProbe:
         """
         buf, srcaddr = self._sock.recvfrom(self._CHUNK_SIZE)
         if srcaddr in self._donetargets:
-          return
+            return
         if re.search("^(?:OPTIONS|INVITE|REGISTER)", buf, re.MULTILINE):
             if srcaddr == (self._externalip, self._localport):
                 self.logDebug("our own pkt ..")
@@ -121,19 +120,20 @@ class SIPProbe:
         else:
             match = self._PKT_FIELD_PATTERNS["useragent"].search(buf)
             if match:
-                self.handleDiscovery(srcaddr[0], srcaddr[1], match.group("useragent").rstrip("\r\n"))
+                useragent = match.group("useragent").rstrip("\r\n")
+            else:
+                useragent = "UNKNOWN"
+            self.handleDiscovery(srcaddr[0], srcaddr[1], useragent)
                 
-    def execute(self, target_iprange):
+    def execute(self, target_iprange, portrange="5060-5070", methods=["OPTIONS"]):
         """
         Scan
         """
-        ipiter = IpIterator(target_iprange)
+        scaniter = scanlist(ip4range(*[target_iprange]), getPortRange(portrange), methods)
         if self.bind() == -1:
           return
-        self._externalip = "127.0.0.1"
         fromname = "quatre-vingt-quinze"
-        fromaddr = "sip:ping@1.1.1.1"
-        toaddr = "sip:pong@1.1.1.1"
+        fromaddr = toaddr = '"%s"<sip:%s@1.1.1.1>' %(fromname, random.choice(xrange(100, 1000)))
         nomoretoscan = False
         while True:
             try:
@@ -146,24 +146,35 @@ class SIPProbe:
                 else: # nobody talking; let's rule ..
                     if nomoretoscan:
                         try:
-                            self.getResponse()
+                            while True:
+                                self.getResponse()
                         except socket.error:
                             break
                     try:
-                        dsthost = (ipiter.next(), 5060)
+                        ip, port, method = scaniter.next()
+                        dsthost = (ip, port)
                     except StopIteration:
                         nomoretoscan = True # targets exhausted: send no more probes ..
                         continue      
-                    branchunique = random.getrandbits(80)
-                    req = helper.makeRequest("REGISTER",
+                    branchunique = '%s' % (random.getrandbits(80))
+                    localtag = createTag('%s%s' % (''.join(map(lambda x: '%02x' % int(x), dsthost[0].split('.'))),'%04x' % dsthost[1]))
+                    callid = '%s' %(random.getrandbits(80))
+                    contact = None
+                    if method != 'REGISTER':
+                        contact = 'sip:%s@%s:%s' % (random.choice(xrange(100, 1000)), self._externalip, self._localport)
+                    req = makeRequest(method,
                                       fromaddr,
                                       toaddr,
                                       dsthost[0],
                                       dsthost[1],
+                                      callid,
                                       self._externalip,
-                                      branchunique)
+                                      branchunique,
+                                      localtag=localtag,
+                                      contact=contact,
+                                      localport=self._localport,)
                     try:
-                        bytes = helper.mysendto(self._sock, req, dsthost)
+                        bytes = mysendto(self._sock, req, dsthost)
                     except socket.error:
                         self.logDebug("WARNING: error while sending SIP packet")
                         pass
@@ -178,4 +189,4 @@ def run(target, pcallback):
 
 if __name__ == '__main__':
     sip = SIPProbe()
-    sip.execute(sys.argv[1])
+    sip.execute(sys.argv[1], portrange=sys.argv[2])
