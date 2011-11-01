@@ -1,5 +1,5 @@
-import targets
 import urllib2
+from engine import targets
 
 DESCRIPTION = """Checks whether /index.html is served on web server"""
 AUTHOR = """d0hm4t06 3. d0p91m4"""

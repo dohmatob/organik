@@ -1,5 +1,5 @@
 import urllib2
-import targets
+from engine import targets
 
 DESCRIPTION = "This plugins determines the server (Apache, gws, etc.) that powers a given site"
 AUTHOR = "d0hm4t06 3. d0p91m4"

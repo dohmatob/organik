@@ -1,5 +1,5 @@
 import nmap 
-import targets
+from engine import targets
 
 DESCRIPTION="""Plugin does host discovery by wrapping nmap (poor; use direct ICMP pinging!!)"""
 AUTHOR="""d0hm4t06 3. d0p91m4"""

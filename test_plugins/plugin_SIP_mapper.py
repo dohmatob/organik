@@ -7,7 +7,7 @@ import traceback
 import re
 from helper import makeRequest, scanlist, ip4range, getRange as getPortRange, createTag, mysendto
 import errno
-import targets
+from engine import targets
 
 DESCRIPTION="""Plugin for SIP (UDP) discovery"""
 AUTHOR="""d0hm4t06 3. d0p91m4"""
@@ -97,12 +97,11 @@ class SIPProbe:
             pass
           
     def handleDiscovery(self, ip, port, useragent):
+        self.logInfo("SIP (UDP) server '%s' at %s:%s" %(useragent, ip, port)) 
         if self._pcallback:
             self._pcallback.feedback(targets.TARGET_SIP_SERVICE(ip=ip, port=port, useragent=useragent,))
             self._pcallback.feedback(targets.TARGET_IP(ip=ip,))
             self._donetargets.append((ip,port))
-        else:
-            self.logInfo("SIP (UDP) server '%s' at %s:%s" %(useragent, ip, port)) 
 
     def getResponse(self):
         """
@@ -125,7 +124,7 @@ class SIPProbe:
                 useragent = "UNKNOWN"
             self.handleDiscovery(srcaddr[0], srcaddr[1], useragent)
                 
-    def execute(self, target_iprange, portrange="5060-5070", methods=["OPTIONS"]):
+    def execute(self, target_iprange, portrange="4569, 5060-5070", methods=["OPTIONS"]):
         """
         Scan
         """

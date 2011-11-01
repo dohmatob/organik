@@ -9,13 +9,16 @@ import fcntl
 import sys
 import os
 from optparse import OptionParser
-import targets 
+from engine import targets 
 
 DESCRIPTION="""Plugin scans host for open TCP ports by using the connect-select technique"""
 AUTHOR="""d0hm4t06 3. d0p91m4"""
 AUTHOR_EMAIL="""gmdopp@gmail.com"""
 
 def targetrule(target):
+    """
+    Run plugin on targets in the 'TARGET_IP' category
+    """
     return target.getCategory() == "TARGET_IP"
 
 def run(target, pcallback):
@@ -173,7 +176,7 @@ class SelectScanner:
                 timeout -= time.time() - starttime
                 socks = self._socks.values()
             except:
-                self.log(traceback.format_exc())
+                self.logDebug(traceback.format_exc())
                 break
         self._socks = dict() # cleanup
         if self._verbose:

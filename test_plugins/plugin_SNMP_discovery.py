@@ -6,7 +6,7 @@ import threading
 import multiprocessing
 import signal
 import os
-import targets
+from engine import targets
 
 DESCRIPTION="""SNMP discovery module"""
 AUTHOR="""d0hm4t06 3. d0p91m4"""

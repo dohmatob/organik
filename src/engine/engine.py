@@ -11,6 +11,7 @@ AUTHOR="""d0hm4t06 3. d0p91m4"""
 
 def pretty_time():
     t = time.ctime().split(" ")
+    t.remove('')
     return "-".join(list([t[3], t[0], t[2], t[1], t[4]]))
 
 class PluginCallback:
@@ -19,17 +20,19 @@ class PluginCallback:
     """
     def __init__(self, plugin_name, 
                  logfile=None,
+                 debug=True,
                  feedback_method=None, 
                  reportVuln_method=None,
                  reportInfo_method=None):
         self._plugin_name = plugin_name
         self._logfile = logfile
+        self._debug = debug
         self._feedback_method = feedback_method
         self._reportVuln_method = reportVuln_method
         self._reportInfo_method = reportInfo_method
 
     def log(self, msg):
-        formatted_msg = "%s %s" %(pretty_time(), msg)
+        formatted_msg = "%s [%s] %s" %(pretty_time(), self._plugin_name, msg)
         print formatted_msg
         if self._logfile:
             try:
@@ -40,13 +43,14 @@ class PluginCallback:
                 self.logDebug("WARNING: caught exception while writing logfile %s (see traceback below)\n%s" %(self._logfile, traceback.format_exc()))
 
     def logDebug(self, msg):
-        self.log("[%s] -DEBUG- %s" %(self._plugin_name, msg))
+        if self._debug:
+            self.log("-DEBUG- %s" %(msg))
     
     def logInfo(self, msg):
-        self.log("[%s] -INFO- %s" %(self._plugin_name, msg))
+        self.log("-INFO- %s" %(msg))
 
     def feedback(self, target):
-        self.logDebug("new target %s" %(target.__str__()))
+        self.logDebug("announcing new target %s" %(target.__str__()))
         self._feedback_method(target)
         
     def reportVuln(self, vid, raw_output):
@@ -64,8 +68,9 @@ class Kernel:
     _WORKER_MODEL = multiprocessing.Process
     _PLUGIN_API_METHODS = list(["targetrule", "run"])
 
-    def __init__(self, logfile=None):
+    def __init__(self, logfile=None, debug=False):
         self._logfile = logfile
+        self._debug = debug
         self._taskqueue = multiprocessing.JoinableQueue()
         self._target_profile = self._MANAGER.dict()
         self._plugins = dict()
@@ -79,7 +84,7 @@ class Kernel:
         """
         Just log
         """
-        formatted_msg = "%s %s" %(pretty_time(), msg)
+        formatted_msg = "%s [kernel] %s" %(pretty_time(), msg)
         print formatted_msg
         if self._logfile:
             try:
@@ -93,13 +98,14 @@ class Kernel:
         """
         Log debug verbose
         """
-        self.log("[kernel] -DEBUG- %s" %(msg))
+        if self._debug:
+            self.log("-DEBUG- %s" %(msg))
     
     def logInfo(self, msg):
         """
         Log information
         """
-        self.log("[kernel] -INFO- %s" %(msg))
+        self.log("-INFO- %s" %(msg))
 
     def loadPlugin(self, plugin_name):
         """
@@ -113,9 +119,9 @@ class Kernel:
                     self.logDebug("WARNING: %s.py doesn't implement method '%s' of the plugin API; plugin will not be loaded" %(plugin_name, method))
                     break
         except:
-            self.logDebug("WARNING: caught exception while loading %s (see traceback below); plugin will not be loaded\nq" %(plugin_name, traceback.format_exc()))
+            self.logDebug("WARNING: caught exception while loading %s (see traceback below); plugin will not be loaded\n%s" %(plugin_name, traceback.format_exc()))
     
-    def loadPlugins(self, plugin_dir, plugin_regexp="plugin_*.py"):
+    def loadPlugins(self, plugin_dir, plugin_regexp="plugin_*.py", donotload=list()):
         """
         Load specified plugins from given plugin directory
         """
@@ -125,11 +131,9 @@ class Kernel:
         plugin_dir_abspath = os.path.abspath(plugin_dir)
         sys.path.append(plugin_dir_abspath)
         loaded_plugins = len(self._plugins)
-        plugins_to_load = glob.glob(plugin_dir_abspath + "/" + plugin_regexp)
+        plugins_to_load = [os.path.basename(item).replace('.py', '') for item in glob.glob(plugin_dir_abspath + "/" + plugin_regexp) if not os.path.basename(item) in donotload]
         self.logDebug("plugins to load: %s" %(len(plugins_to_load)))
-        for item in plugins_to_load:
-            plugin_name = os.path.basename(item).replace(".py", "")
-            self.loadPlugin(plugin_name)
+        map(lambda plugin_name: self.loadPlugin(plugin_name), plugins_to_load)
         self.logDebug("loaded: %s plugins out of %s" %(len(self._plugins) - loaded_plugins, len(plugins_to_load)))
         
     def reportVuln(self, plugin_name, vid, raw_output):
@@ -191,6 +195,7 @@ class Kernel:
         try:
             pcallback = PluginCallback(plugin_name=plugin_name, 
                                        logfile=self._logfile,
+                                       debug=self._debug,
                                        feedback_method=self.feedback, 
                                        reportVuln_method=self.reportVuln, 
                                        reportInfo_method=self.reportInfo)
@@ -230,17 +235,20 @@ class Kernel:
             self.runPlugin(plugin_name, target)
             self._taskqueue.task_done()
 
-    def start(self, plugin_dir, target_profile):
+    def start(self, target_profile, plugin_dir, donotload):
         """
         Start kernel
         """
+        if not self._debug:
+            self.log("command-line '--quiet' switch detected; entering minimal debug mode")
         self.logDebug("starting")
         self.registerSignals()
         self.logDebug("pid: %s" %(os.getpid()))
         self.logDebug("logfile: %s" %(self._logfile))
         self.logDebug("plugin directory: %s" %(plugin_dir))
-        self.loadPlugins(plugin_dir)
-        self.feedback(target_profile)
+        self.loadPlugins(plugin_dir, donotload=donotload)
+        for target in target_profile:
+            self.feedback(target)
 
     def finish(self, signum=signal.SIGTERM):
         """
@@ -251,7 +259,7 @@ class Kernel:
 
     def serve(self, nbworkers):
         """
-        Server task queue to workers
+'        Server task queue to workers
         """
         self.logDebug("deploying %s workers on task queue" %(nbworkers))
         for z in xrange(nbworkers):
@@ -259,12 +267,12 @@ class Kernel:
             worker.start()
         self._taskqueue.join() # our only business is to complete all tasks; so no need 'join' on workers if we're done !!!
         
-    def bootstrap(self, plugin_dir, target, nbworkers=1):
+    def bootstrap(self, target_profile, nbworkers, plugin_dir, donotload=list()):
         """
         Bootstrap kernel 
         """
         self.logDebug("bootstrapped")
-        self.start(plugin_dir, target)
+        self.start(target_profile, plugin_dir, donotload=donotload)
         self.serve(nbworkers)
         self.finish()
         

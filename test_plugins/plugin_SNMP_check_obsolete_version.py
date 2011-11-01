@@ -1,3 +1,5 @@
+from engine import targets
+
 DESCRIPTION="""Plugin to check for obselete SNMP versions ( < 3) --insecure!"""
 AUTHOR="""d0hm4t06 3. d0p91m4"""
 AUTHOR_EMAIL="""gmdopp@gmail.com"""
