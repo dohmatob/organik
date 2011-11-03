@@ -9,7 +9,7 @@ import fcntl
 import sys
 import os
 from optparse import OptionParser
-from engine import targets 
+from core import targets 
 
 DESCRIPTION="""Plugin scans host for open TCP ports by using the connect-select technique"""
 AUTHOR="""d0hm4t06 3. d0p91m4"""
@@ -52,7 +52,13 @@ class SelectScanner:
         else:
             print message
 
-    def logDeInfo(self, message):
+    def logWarning(self, message):
+        if self._pcallback:
+            self._pcallback.logWarning(message)
+        else:
+            print message
+
+    def logInfo(self, message):
         if self._pcallback:
             self._pcallback.logDebug(message)
         else:
@@ -116,10 +122,10 @@ class SelectScanner:
                     if error.errno == errno.EINPROGRESS:
                         pass
                     else:
-                        self.log(traceback.format_exc())
+                        self.logWarning(traceback.format_exc())
                         continue
                 except:
-                    self.log(traceback.format_exc())
+                    self.logWarning(traceback.format_exc())
                     continue
             else:
                 # select on sockets
@@ -148,16 +154,16 @@ class SelectScanner:
                 self.freeSock(port)
                 self._open_ports.append(port)
                 if self._pcallback:
-                    self._pcallback.feedback(targets.TARGET_TCP_PORT(ip=self._target, port=port))
+                    self._pcallback.announceNewTarget(targets.TARGET_TCP_PORT(ip=self._target, port=port))
                 else:
                     self.logInfo('found TCP service at %s:%s' %(ip, port))
             except socket.error, error:
                 if error.errno == errno.ENOTCONN:
                     continue
                 else:
-                    self.log(traceback.format_exc())
+                    self.logWarning(traceback.format_exc())
             except:
-                self.log(traceback.format_exc())
+                self.logWarning(traceback.format_exc())
 
     def mainLoop(self, timeout):
         socks = self._socks.values()

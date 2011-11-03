@@ -1,4 +1,4 @@
-from engine import targets
+from core import targets
 
 DESCRIPTION="""Plugin to check for obselete SNMP versions ( < 3) --insecure!"""
 AUTHOR="""d0hm4t06 3. d0p91m4"""

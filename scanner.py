@@ -5,7 +5,7 @@ import multiprocessing
 import os
 import sys
 import time
-from engine import engine, targets
+from core import engine, targets
 
 if __name__ == '__main__':
     parser = ArgumentParser(version="w0rkz 0f d0hm4t06 3. d0p91m4\r\n(c) 2011")
@@ -45,7 +45,5 @@ if __name__ == '__main__':
     timestamp = '-'.join(list([timestamp[2],timestamp[1],timestamp[4]]))
     logfile = "var/log/scanner-%s-%s.log" %(timestamp,os.getpid())
     k = engine.Kernel(logfile=logfile, debug=(not options.quiet))
-    target_profile = list()
-    for target in options.target:
-        target_profile.append(targets.TARGET_IPRANGE(iprange=target))
-    k.bootstrap(target_profile, int(options.nbworkers), options.plugindir, donotload=options.donotload)
+    target_profile = targets.TARGET_IPRANGE(iprange=options.target)
+    k.bootstrap(target_profile, options.plugindir, options.donotload, int(options.nbworkers))

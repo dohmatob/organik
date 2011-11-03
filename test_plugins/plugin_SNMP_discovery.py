@@ -1,4 +1,4 @@
-import netsnmp
+import libnetsnmp
 import re
 import sys
 import math
@@ -6,7 +6,7 @@ import threading
 import multiprocessing
 import signal
 import os
-from engine import targets
+from core import targets
 
 DESCRIPTION="""SNMP discovery module"""
 AUTHOR="""d0hm4t06 3. d0p91m4"""
@@ -32,27 +32,33 @@ class SnmpProbe:
         if self._pcallback:
             self._pcallback.logDebug(msg)
         else:
-            print msg
+            print "-DEBUG- %s" %(msg)        
 
     def logInfo(self, msg):
         if self._pcallback:
             self._pcallback.logInfo(msg)
         else:
-            print msg
+            print "-INFO- %s" %(msg)
+
+    def logWarning(self, msg):
+        if self._pcallback:
+            self._pcallback.logWarning(msg)
+        else:
+            print "-WARNING- %s" %(msg)
 
     def probe(self, target_ip, version, community):
         if (target_ip,version,) in self._discoveries:
             return
         self.logDebug("probing %s for SNMPv%s (%s)" %(target_ip, version, community))
-        session = netsnmp.Session(Version=version,
+        session = libnetsnmp.Session(Version=version,
                                   DestHost=target_ip,
                                   Community=community,)
-        oids = netsnmp.VarList(netsnmp.Varbind("sysDescr", 0), 
-                               netsnmp.Varbind("sysName", 0), 
-                               netsnmp.Varbind("sysUpTime", 0),
-                               netsnmp.Varbind("hrMemorySize", 0),
-                               netsnmp.Varbind("sysLocation", 0),
-                               netsnmp.Varbind("sysContact", 0),)
+        oids = libnetsnmp.VarList(libnetsnmp.Varbind("sysDescr", 0), 
+                               libnetsnmp.Varbind("sysName", 0), 
+                               libnetsnmp.Varbind("sysUpTime", 0),
+                               libnetsnmp.Varbind("hrMemorySize", 0),
+                               libnetsnmp.Varbind("sysLocation", 0),
+                               libnetsnmp.Varbind("sysContact", 0),)
         """
         command-line example: snmpget -v1 -c private 192.168.46.1 sysDescr.0 sysName.0 \ 
         sysUpTime.0 hrMemorySize.0 sysContact.0 sysLocation.0
@@ -78,7 +84,7 @@ class SnmpProbe:
                   syscontact)
             self.logInfo(raw_output) # XXX report info/vuln
             if self._pcallback:
-                self._pcallback.feedback(targets.TARGET_SNMP_SERVICE(ip=target_ip, 
+                self._pcallback.announceNewTarget(targets.TARGET_SNMP_SERVICE(ip=target_ip, 
                                                                      port=161, # XXX other UDP ports ?
                                                                      version=version,
                                                                      community=community,

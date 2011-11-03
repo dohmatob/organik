@@ -5,9 +5,9 @@ import time
 import random
 import traceback
 import re
-from helper import makeRequest, scanlist, ip4range, getRange as getPortRange, createTag, mysendto
+from sipcontrib.helper import makeRequest, scanlist, ip4range, getRange as getPortRange, createTag, mysendto
 import errno
-from engine import targets
+from core import targets
 
 DESCRIPTION="""Plugin for SIP (UDP) discovery"""
 AUTHOR="""d0hm4t06 3. d0p91m4"""
@@ -67,13 +67,19 @@ class SIPProbe:
         if self._pcallback:
             self._pcallback.logDebug(msg)
         else:
-            print msg        
+            print "-DEBUG- %s" %(msg)        
 
     def logInfo(self, msg):
         if self._pcallback:
             self._pcallback.logInfo(msg)
         else:
-            print msg        
+            print "-INFO- %s" %(msg)
+
+    def logWarning(self, msg):
+        if self._pcallback:
+            self._pcallback.logWarning(msg)
+        else:
+            print "-WARNING- %s" %(msg)
         
     def bind(self):
         """
@@ -84,11 +90,11 @@ class SIPProbe:
                 self._sock.bind((self._bindingip,self._localport))
                 break
             except socket.error:
-                self.logDebug("couldn't bind to localport %s" %(self._localport))
+                self.logWarning("couldn't bind to localport %s" %(self._localport))
                 self._localport += 1
         self._externalip = "127.0.0.1"
         if self._localport == 65535:
-            self.logDebug("WARNING: couldn't bind to any local port")
+            self.logWarning("couldn't bind to any local port")
             return -1
         self.logDebug("bound to %s:%s" %(self._bindingip, self._localport))
         try:
@@ -99,8 +105,8 @@ class SIPProbe:
     def handleDiscovery(self, ip, port, useragent):
         self.logInfo("SIP (UDP) server '%s' at %s:%s" %(useragent, ip, port)) 
         if self._pcallback:
-            self._pcallback.feedback(targets.TARGET_SIP_SERVICE(ip=ip, port=port, useragent=useragent,))
-            self._pcallback.feedback(targets.TARGET_IP(ip=ip,))
+            self._pcallback.announceNewTarget(targets.TARGET_SIP_SERVICE(ip=ip, port=port, useragent=useragent,))
+            self._pcallback.announceNewTarget(targets.TARGET_IP(ip=ip,))
             self._donetargets.append((ip,port))
 
     def getResponse(self):
@@ -124,11 +130,11 @@ class SIPProbe:
                 useragent = "UNKNOWN"
             self.handleDiscovery(srcaddr[0], srcaddr[1], useragent)
                 
-    def execute(self, target_iprange, portrange="4569, 5060-5070", methods=["OPTIONS"]):
+    def execute(self, target, portrange="4569, 5060-5070", methods=["OPTIONS"]):
         """
         Scan
         """
-        scaniter = scanlist(ip4range(*[target_iprange]), getPortRange(portrange), methods)
+        scaniter = scanlist(ip4range(*target), getPortRange(portrange), methods)
         if self.bind() == -1:
           return
         fromname = "quatre-vingt-quinze"
@@ -175,16 +181,18 @@ class SIPProbe:
                     try:
                         bytes = mysendto(self._sock, req, dsthost)
                     except socket.error:
-                        self.logDebug("WARNING: error while sending SIP packet")
-                        pass
+                        self.logWarning("socket error while sending SIP pkt to %s:%s (see traceback below)\n%s" %(dst,traceback.format_exc()))
+        
             except:
-                print traceback.format_exc()
-                pass # XXX dirty !!!
+                self.logWarning("error in select.select (see traceback below)\n%s" %(traceback.format_exc()))
 
         
 def run(target, pcallback):
     sipprobe = SIPProbe(pcallback=pcallback)
-    sipprobe.execute(target.get("iprange"))
+    raw_target = target.get('iprange')
+    if not type(raw_target) is list:
+        raw_target = [raw_target]
+    sipprobe.execute(raw_target)
 
 if __name__ == '__main__':
     sip = SIPProbe()
