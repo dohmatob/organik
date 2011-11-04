@@ -128,6 +128,7 @@ class SIPProbe:
                 useragent = match.group("useragent").rstrip("\r\n")
             else:
                 useragent = "UNKNOWN"
+            self.logDebug("Received SIP reponse pkt\n%s" %(buf))
             self.handleDiscovery(srcaddr[0], srcaddr[1], useragent)
                 
     def execute(self, target, portrange="4569, 5060-5070", methods=["OPTIONS"]):

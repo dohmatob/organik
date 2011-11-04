@@ -6,7 +6,9 @@ AUTHOR = """d0hm4t06 3. d0p91m4"""
 AUTHOR_EMAIL="""gmdopp@gmail.com"""
 
 def targetrule(target):
-    return target.getCategory() == "TARGET_TCP_PORT" and target.get("port") == 80
+    if target.getCategory() != "TARGET_TCP_PORT":
+        return False
+    return target.get("port") == 80
 
 def run(target, pcallback):
     try:

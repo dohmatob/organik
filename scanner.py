@@ -5,10 +5,11 @@ import multiprocessing
 import os
 import sys
 import time
+import math
 from core import engine, targets
 
 if __name__ == '__main__':
-    parser = ArgumentParser(version="w0rkz 0f d0hm4t06 3. d0p91m4\r\n(c) 2011")
+    parser = ArgumentParser(version="w0rkz 0f d0hm4t06 3. d0p91m4")
     parser.add_argument("--target",
                       action="append",
                       dest="target",
@@ -22,7 +23,7 @@ if __name__ == '__main__':
                       )
     parser.add_argument("--plugindir",
                       dest="plugindir",
-                      default="production/",
+                      default="plugins/",
                       help="""specify directory from which to load plugins (default is production/)"""
                       )
     parser.add_argument("--quiet",
@@ -37,6 +38,11 @@ if __name__ == '__main__':
                         default=list(),
                         help="""specify plugin to ignore""",
                         ) 
+    parser.add_argument("--timeout",
+                      dest="timeout",
+                      default=-1,
+                      help="""specify overall timeout"""
+                      )
     options = parser.parse_args()
     os.chdir(os.path.dirname(sys.argv[0]))
     os.system("mkdir -p var/log/")
@@ -46,4 +52,8 @@ if __name__ == '__main__':
     logfile = "var/log/scanner-%s-%s.log" %(timestamp,os.getpid())
     k = engine.Kernel(logfile=logfile, debug=(not options.quiet))
     target_profile = targets.TARGET_IPRANGE(iprange=options.target)
-    k.bootstrap(target_profile, options.plugindir, options.donotload, int(options.nbworkers))
+    k.bootstrap(target_profile, 
+                options.plugindir, 
+                options.donotload, 
+                nbworkers=int(options.nbworkers), 
+                timeout=int(math.floor(float(options.timeout))))

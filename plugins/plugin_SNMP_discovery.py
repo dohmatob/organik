@@ -66,6 +66,13 @@ class SnmpProbe:
         sysdescr, sysname, sysuptime, hrmemorysize, syslocation, syscontact = session.get(oids)
         if sysdescr:
             self._discoveries.append((target_ip,version,))
+            if self._pcallback:
+                self._pcallback.announceNewTarget(targets.TARGET_SNMP_SERVICE(ip=target_ip, 
+                                                                     port=161, # XXX other UDP ports ?
+                                                                     version=version,
+                                                                     community=community,
+                                                                     sysdescr=sysdescr,
+                                                                     sysname=sysname))
             raw_output = """%s serves SNMPv%s (%s):
             sysDescr    : %s
             sysName     : %s
@@ -82,14 +89,7 @@ class SnmpProbe:
                   hrmemorysize,
                   syslocation,
                   syscontact)
-            self.logInfo(raw_output) # XXX report info/vuln
-            if self._pcallback:
-                self._pcallback.announceNewTarget(targets.TARGET_SNMP_SERVICE(ip=target_ip, 
-                                                                     port=161, # XXX other UDP ports ?
-                                                                     version=version,
-                                                                     community=community,
-                                                                     sysdescr=sysdescr,
-                                                                     sysname=sysname))
+            self.logInfo(raw_output) # XXX report info/vuln            
 
     
     def execute(self, target_ip, communities=None):
