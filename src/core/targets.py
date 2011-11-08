@@ -73,6 +73,14 @@ class TARGET_SIP_SERVICE(TARGET):
     _params = list(["ip", "port", "useragent"])
 
 
+class TARGET_SIP_USER(TARGET):
+    """
+    Encapsulates a target SIP user
+    """
+    _category = "TARGET_SIP_USER"
+    _params = list(["ip", "port", "useragent", "username", "authentication"])
+
+
 class TargetTest(unittest.TestCase):
     def test_abstract_init(self):
         t = TARGET_IP(ip="127.0.0.1")
