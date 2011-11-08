@@ -22,13 +22,15 @@ class PluginCallback:
     Callback used by plugins to feedback into kernel
     """
     def __init__(self, 
-                 plugin_name, 
+                 plugin_name,
+                 target,
                  logfile=None, 
                  announceNewTarget_method=None, 
                  reportVuln_method=None, 
                  reportInfo_method=None,
                  debug=True):
         self._plugin_name = plugin_name
+        self._target = target
         self._logfile = logfile
         self._announceNewTarget_method = announceNewTarget_method
         self._reportVuln_method = reportVuln_method
@@ -39,7 +41,7 @@ class PluginCallback:
         """
         /!\ Should never be invoked directly !!!
         """
-        formatted_msg = '%s [%s] %s' %(pretty_time(),self._plugin_name,msg)
+        formatted_msg = '%s [%s] (%s) %s' %(pretty_time(),self._plugin_name,self._target.__str__(),msg)
         print formatted_msg
         if self._logfile:
             try:
@@ -79,7 +81,7 @@ class PluginCallback:
         way, more specialized plugins are invoked to explore the announced target
         """
         if self._announceNewTarget_method:
-            self.logDebug('announcing new target %s' %(target.__str__()))
+            self.logDebug('announcing new %s' %(target.__str__()))
             self._announceNewTarget_method(target)
 
     def reportVuln(self, vid, raw_output):
@@ -112,6 +114,7 @@ class Kernel:
         self._target_profile = self._MANAGER.dict()
         self._task_queue = multiprocessing.JoinableQueue()
         self._workers = list()
+        self._pid = os.getpid()
         if logfile:
             try:
                 open(logfile, 'w').close()
@@ -154,6 +157,8 @@ class Kernel:
             for method in self._PLUGIN_API_METHODS:
                 if not method in self._plugins[plugin_name].__dict__:
                     self.logDebug("%s doesn't implement method '%s' of the PLUGIN API; plugin will not be loaded" %(plugin_name,method))
+                    del self._plugins[plugin_name]
+                    break
         except:
             self.logDebug("caught exception while loading %s (see traceback below)\n%s" %(plugin_name,traceback.format_exc()))
 
@@ -162,7 +167,7 @@ class Kernel:
         Load plugins all from specified directory, all except an option list of plugins
         """
         if not os.path.isdir(plugin_dir):
-            self.logWarning("can't access plugin directory '%s' (does directory exist)")
+            self.logWarning("can't access plugin directory '%s' (does directory exist)" %(plugin_dir))
             return
         plugin_dir = os.path.abspath(plugin_dir)
         self.logDebug("plugin directory: %s" %(plugin_dir))
@@ -177,6 +182,7 @@ class Kernel:
         Run named plugin on target
         """
         pcallback = PluginCallback(plugin_name,
+                                   target,
                                    logfile=self._logfile,
                                    announceNewTarget_method=self.announceNewTarget,
                                    reportVuln_method=self.reportVuln,
@@ -232,20 +238,23 @@ class Kernel:
                 self._task_queue.put((plugin_name, target))
 
     def signalHandler(self, signum, frame):
+        if os.getpid() != self._pid:
+            return
         if signum == signal.SIGINT:
+            self.logDebug("caught SIGINT; preparing to abort")
+            self.finish()
+        elif signum == signal.SIGALRM:
+            self.logDebug("caught SIGALRM; preparing to abort")
             self.finish()
         else:
             self.logWarning("unhandled signum: %s" %(signum))
-
-    def registerSignals(self):
-        self.logDebug("registering signals")
-        signal.signal(signal.SIGINT, self.signalHandler)
 
     def devil(self):
         """
         Dynamically poll kernel task queue
         """
         signal.signal(signal.SIGINT, signal.SIG_DFL)
+        signal.signal(signal.SIGALRM, signal.SIG_DFL)
         while True:
             try:
                 plugin_name, target = self._task_queue.get()
@@ -255,14 +264,19 @@ class Kernel:
             self.runPlugin(plugin_name, target)
             self._task_queue.task_done()
 
-    def finish(self):
+    def finish(self, signum=signal.SIGTERM):
         """
-        Shuts down all kernel workers, and then exits clean
+        Brings down all kernel workers, and then exits clean
         """
-        for worker in self._workers:
-            worker.terminate()
-        sys.exit(0)
-
+        if not self._task_queue._closed:
+            self._task_queue.close()
+        self.logDebug("terminating")
+        try:
+            os.kill(0, signum)
+        except:
+            self.logDebug("caught exception while sending signum %s to process group (see traceback below)\n%s" %(traceback.format_exc()))
+            os.kill(0, signal.SIGKILL)
+        
     def serve(self, nbworkers):
         """
         Forever, serve work, until no more there is
@@ -274,16 +288,22 @@ class Kernel:
         self._task_queue.join()
         self.finish()
 
-    def bootstrap(self, target_profile, plugin_dir, donotload=list(), nbworkers=multiprocessing.cpu_count()*20):
+    def bootstrap(self, target_profile, plugin_dir, donotload=list(), nbworkers=multiprocessing.cpu_count()*20, timeout=0):
         """
         Kick-off
         """
         if not self._debug:
             self.logInfo("entering silent mode; no debug output will be produced")
         self.logDebug("bootstrapped")
-        self.registerSignals()
+        self.logDebug("pid: %s" %(self._pid))
         self.logDebug("logfile: %s" %(os.path.abspath(self._logfile)))
         self.loadPlugins(plugin_dir, donotload=donotload)
+        self.logDebug("setting trap for SIGINT")
+        signal.signal(signal.SIGINT, self.signalHandler)
+        if timeout > 0:
+            self.logDebug("setting trap for SIGALRM (timeout=%ss)" %(timeout))
+            signal.signal(signal.SIGALRM, self.signalHandler)
+            signal.alarm(timeout)
         self.announceNewTarget(target_profile)
         self.serve(nbworkers)
 
