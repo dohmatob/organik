@@ -6,11 +6,14 @@ import threading
 import multiprocessing
 import signal
 import os
+import traceback
 from core import targets
 
 DESCRIPTION="""SNMP discovery module"""
 AUTHOR="""d0hm4t06 3. d0p91m4"""
 AUTHOR_EMAIL="""gmdopp@gmail.com"""
+
+ROOTDIR='.'
 
 def targetrule(target):
     """
@@ -108,7 +111,7 @@ class SnmpProbe:
 def run(target, pcallback):
     snmpprobe = SnmpProbe(pcallback=pcallback)
     try:
-        fh = open("etc/snmp/common_communities.txt", 'r')
+        fh = open("%s/etc/snmp/common_communities.txt" % ROOTDIR, 'r')
         communities = [line.rstrip('\r\n') for line in fh.readlines()]
         fh.close()
     except:
@@ -119,7 +122,7 @@ def run(target, pcallback):
 if __name__ == "__main__":
     snmpprobe = SnmpProbe()
     try:
-        fh = open("etc/snmp/common_communities.txt", 'r')
+        fh = open("%s/etc/snmp/common_communities.txt" %ROOTDIR, 'r')
         communities = [line.rstrip('\r\n') for line in fh.readlines()]
         fh.close()
     except:

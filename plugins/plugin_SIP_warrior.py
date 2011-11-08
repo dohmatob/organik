@@ -2,6 +2,7 @@
 import re
 import random
 import socket
+import traceback
 from argparse import ArgumentParser
 from libsip.siplet import SipLet
 from libsip.helper import mysendto, dictionaryattack
@@ -11,6 +12,8 @@ from core import targets
 AUTHOR="""d0hm4t06 3. d0p91m4"""
 AUTHOR_EMAIL="""gmdopp@gmail.com"""
 DESCRIPTION="""Plugin to enumerate remote SIP usernames"""
+
+ROOTDIR='.'
 
 def targetrule(target):
     """
@@ -153,7 +156,11 @@ class SipWarrior(SipLet):
         if self._BADUSER == None:
             return
         self._doneusernames = list()
-        self._scaniter = dictionaryattack(open(dictionary, 'r'))
+        try:
+            self._scaniter = dictionaryattack(open(dictionary, 'r'))
+        except:
+            self.logDebug("caught exception while opening dictionary '%s' (see traceback below):\n%s" %(dictionary,traceback.format_exc()))
+            return        
         self.mainLoop()
         if self._doneusernames:
             self.logInfo('cracked usernames: %s' %(', '.join(self._doneusernames))) # XXX reportVuln here !!!
@@ -161,7 +168,7 @@ class SipWarrior(SipLet):
         
 def run(target, pcallback):
     sipwarrior = SipWarrior(pcallback=pcallback)
-    sipwarrior.execute(target.get('ip'), target.get('port'), 'etc/SIP/wordlists/dummy_usernames.txt')
+    sipwarrior.execute(target.get('ip'), target.get('port'), '%s/etc/SIP/wordlists/dummy_usernames.txt' % ROOTDIR)
 
 
 if __name__ == '__main__':
@@ -181,7 +188,7 @@ if __name__ == '__main__':
     parser.add_argument('--dictionary', '-d',
                         action='store',
                         dest='dictionary',
-                        default='etc/SIP/wordlists/dummy_usernames.txt',
+                        default=None,
                         help="""specify dictionary file of SIP usernames to use""",
                         )
     parser.add_argument('--method', '-m',

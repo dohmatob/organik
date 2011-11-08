@@ -107,7 +107,10 @@ class Kernel:
     _WORKER_MODEL = multiprocessing.Process
     _PLUGIN_API_METHODS = ['targetrule','run',]
 
-    def __init__(self, logfile=None, debug=True):
+    def __init__(self, 
+                 logfile=None, 
+                 debug=True,
+                 rootdir=None):
         self._logfile = logfile
         self._debug = debug
         self._plugins = dict()
@@ -115,7 +118,14 @@ class Kernel:
         self._task_queue = multiprocessing.JoinableQueue()
         self._workers = list()
         self._pid = os.getpid()
-        if logfile:
+        if not rootdir is None:
+            if not os.path.isdir(rootdir):
+                self.logDebug("cannot access root directory '%s' (does directory exist?)" %(rootdir))
+                return
+            self._rootdir = os.path.abspath(rootdir)
+        else:
+            self._rootdir = os.getcwd()
+        if not logfile is None:
             try:
                 open(logfile, 'w').close()
             except:
@@ -161,6 +171,7 @@ class Kernel:
                     break
         except:
             self.logDebug("caught exception while loading %s (see traceback below)\n%s" %(plugin_name,traceback.format_exc()))
+        self._plugins[plugin_name].ROOTDIR = self._rootdir
 
     def loadPlugins(self, plugin_dir, plugin_regexp='plugin_*.py', donotload=list()):
         """
@@ -296,6 +307,7 @@ class Kernel:
             self.logInfo("entering silent mode; no debug output will be produced")
         self.logDebug("bootstrapped")
         self.logDebug("pid: %s" %(self._pid))
+        self.logDebug("root dir: %s" %(self._rootdir))
         self.logDebug("logfile: %s" %(os.path.abspath(self._logfile)))
         self.loadPlugins(plugin_dir, donotload=donotload)
         self.logDebug("setting trap for SIGINT")
