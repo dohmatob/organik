@@ -11,7 +11,7 @@ from core import targets
 
 AUTHOR="""d0hm4t06 3. d0p91m4"""
 AUTHOR_EMAIL="""gmdopp@gmail.com"""
-DESCRIPTION="""Plugin to enumerate remote SIP usernames"""
+DESCRIPTION="""Plugin to enumerate remote SIP usernames/extensions"""
 
 ROOTDIR='.'
 
@@ -57,7 +57,7 @@ class SipWarrior(SipLet):
                 authentication = 'reqauth'
                 if meta['code'] == OKAY:
                     authentication = 'noauth'
-                self.logInfo("cracked username: %s" %(username))
+                self.logInfo("cracked username: %s (SIP response to '%s' request was '%s')" %(username,self._method,meta['respfirstline']))
                 if self._pcallback:
                     self._pcallback.announceNewTarget(targets.TARGET_SIP_USER(ip=srcaddr[0], 
                                                                               port=srcaddr[1],
@@ -72,11 +72,14 @@ class SipWarrior(SipLet):
         """
         Generate next request to fire on target SIP UAS
         """
-        next = self.getNextScanItem()
-        if not next is None:
-            username = next
-            ToUri = FromUri = 'sip:%s@%s' %(username, self._targetip)
-            return (self._targetip,self._targetport), self.makeRequest((self._targetip,self._targetport), method=self._method, username=username, ToUri=ToUri, FromUri=FromUri)
+        nextusername = self.getNextScanItem()
+        if not nextusername is None:
+            ToUri = FromUri = 'sip:%s@%s' %(nextusername, self._targetip)
+            return (self._targetip,self._targetport), self.makeRequest((self._targetip,self._targetport), 
+                                                                       method=self._method, 
+                                                                       username=nextusername, 
+                                                                       ToUri=ToUri, 
+                                                                       FromUri=FromUri)
         
     def getBADUSER(self):
         """
@@ -97,7 +100,7 @@ class SipWarrior(SipLet):
         try:
             mysendto(self._sock,data,(self._targetip,self._targetport))
         except socket.error,err:
-            self.logWarning("socket error: %s" % err)
+            self.logWarning("socket error while sending SIP requset: %s" % err)
             return
         # first we identify the assumed reply for an unknown extension 
         gotbadresponse=False
@@ -106,7 +109,7 @@ class SipWarrior(SipLet):
                 try:
                     buff,srcaddr = self._sock.recvfrom(8192)
                 except socket.error,err:
-                    self.logWarning("socket error: %s" % err)
+                    self.logWarning("socket error while receiving from remote peer: %s" % err)
                     return
                 meta = self.parsePkt(buff)
                 if meta['code'] is None: # this is a request, not a response

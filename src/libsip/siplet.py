@@ -13,14 +13,14 @@ from core import targets
 
 SIP_PKT_PATTERNS = {'reqfirstline':re.compile("^(?P<method>(?:REGISTER|OPTIONS|ACK|BYE|CANCEL|NOTIFY|PRACK|INVITE|UPDATE|PUBLISH|MESSAGE|INFO)) sip:(?P<username>.*?)@(?P<domain>.*?) SIP/2.0\r\n"),
                     'respfirstline':re.compile("^SIP/2.0 (?P<code>[1-6][0-9]{2}) "),
-                    'Via':re.compile("Via: SIP/2.0/UDP (?P<provider>\S+?);branch=(?P<branch>z9hG4bK\S*?).*?\r\n"),
-                    'To':re.compile("To: (?P<username>\S+?) *?<(?P<uri>sip:\S+?@.+?)>(?:; *?tag=(?P<tag>.*?))\r\n"),
-                    'From':re.compile("From: (?P<username>\S+?) <(?P<uri>sip:\S+?@\S+?)>; *?tag=(?P<tag>.+?)\r\n"),
+                    'Via':re.compile("(?:Via|v): SIP/2.0/UDP (?P<provider>\S+?);branch=(?P<branch>z9hG4bK\S*?).*?\r\n"),
+                    'To':re.compile("(?:To|t): (?P<username>\S+?) *?<(?P<uri>sip:\S+?@.+?)>(?:; *?tag=(?P<tag>.*?))\r\n"),
+                    'From':re.compile("(?:From|f): (?P<username>\S+?) <(?P<uri>sip:\S+?@\S+?)>; *?tag=(?P<tag>.+?)\r\n"),
                     'CSeq':re.compile("CSeq: (?P<secnum>[0-9]+?) (?P<method>(?:REGISTER|OPTIONS|ACK|BYE|CANCEL|NOTIFY|PRACK|INVITE|UPDATE|PUBLISH|MESSAGE|INFO))\r\n"),
-                    'Call-ID':re.compile("Call-ID: (?P<callid>\S*?)\r\n"),
+                    'Call-ID':re.compile("(?:Call-ID|i): (?P<callid>\S*?)\r\n"),
                     'Max-Forwards':re.compile("Max-Forwards: (?P<maxforwars>[0-9]+?)\r\n"),
                     'User-Agent':re.compile("(?:User-Agent|Server): (?P<useragent>.+?\r\n)"),
-                    'Content-Length':re.compile("Content-Length: (?P<contentlength>[0-9]+?)\r\n"),
+                    'Content-Length':re.compile("(?:Content-Length): (?P<contentlength>[0-9]+?)\r\n"),
                     }
 
 
@@ -61,7 +61,7 @@ class SipLet:
         else:
             print "-WARNING- %s" %(msg)
         
-    def makeRequest(self, dsthost, srchost=None, method="OPTIONS", username="sipuser", ToUri=None, FromUri=None, maxforwards=70, contact=None, content="", cseqnum=None, callid=None):
+    def makeRequest(self, dsthost, srchost=None, method="OPTIONS", username="sipuser", ToUri=None, FromUri=None, maxforwards=70, contact=None, content="", cseqnum=None, callid=None, auth=None):
         self._useragent = 'CRON' # XXX rm
         self._accept = 'application/sdp' # XXX rm
         if not srchost:
@@ -94,6 +94,28 @@ class SipLet:
         headers['User-Agent'] = '%s' %(self._useragent)
         headers['Accept'] = self._accept        
         finalheaders['Content-Length'] = len(content)
+        if auth is not None:
+            response = challengeResponse(auth['username'],
+                                         auth['realm'],
+                                         auth['password'],
+                                         method,
+                                         uri,
+                                         auth['nonce'])        
+            if auth['proxy']:
+                finalheaders['Proxy-Authorization'] = \
+                    'Digest username="%s",realm="%s",nonce="%s",uri="%s",response="%s",algorithm=MD5' % (auth['username'],
+                                                                                                         auth['realm'],
+                                                                                                         auth['nonce'],
+                                                                                                         uri,
+                                                                                                         response)
+            else:
+                finalheaders['Authorization'] = \
+                    'Digest username="%s",realm="%s",nonce="%s",uri="%s",response="%s",algorithm=MD5' % (auth['username'],
+                                                                                                         auth['realm'],
+                                                                                                         auth['nonce'],
+                                                                                                         uri,
+                                                                                                         response)
+
         req += firstline
         for param, value in superheaders.iteritems():
             req += '%s: %s\r\n' %(param,value)
@@ -171,15 +193,34 @@ class SipLet:
             if meta['headers']['User-Agent'] is None:
                 meta['headers']['User-Agent'] = 'UNKNOWN'  
             self.callback(srcaddr, meta)
-            self._donetargets.append(srcaddr)        
+            self._donetargets.append(srcaddr)
+
+    def noMoreToScan(self):
+        """
+        This boolean method determines whether scan items have been exhausted
+        """
+        return self._nomoretoscan
 
     def getNextScanItem(self):
+        """
+        This method fetches next scan item
+        """
         try:
             return self._scaniter.next()
         except StopIteration:
             self._nomoretoscan = True
 
+    def noNeedToContinue(self):
+        """
+        This boolean method is called to check whether some global goal 
+        has been achieved which makes the rest of the scan useless. 
+        """
+        return False
+
     def mainLoop(self):
+        """
+        ARGANIC CHEMISTRY
+        """
         self.bind()
         if not self._bound:
             return
@@ -187,12 +228,14 @@ class SipLet:
             try:
                 r, w, x = select.select([self._sock], list(), list(), self._selecttime)
                 if r: # somebody talking; let's see what they saying ..
+                    if self.noNeedToContinue():
+                        break
                     try:
                         self.getResponse()
                     except socket.error:
                         continue
                 else: # nobody talking; let's rule ..
-                    if self._nomoretoscan:
+                    if self.noMoreToScan():
                         try:
                             while True:
                                 self.getResponse()

@@ -25,7 +25,8 @@ class SipMapper(SipLet):
         next = self.getNextScanItem()
         if not next is None:
             ip,port,method = next
-            return (ip,port), self.makeRequest((ip,port), method=method)
+            return (ip,port), self.makeRequest((ip,port), 
+                                               method=method)
         
     def execute(self, target, portrange="5060-5070", methods=["OPTIONS"]):
         """
@@ -54,7 +55,7 @@ if __name__ == '__main__':
     parser.add_argument('--portrange', '-p',
                    action='append',
                    dest='portrange',
-                   default=list(),
+                   default=['5060'],
                    help="""specify target port/portrange""",
                    )
     options = parser.parse_args()
