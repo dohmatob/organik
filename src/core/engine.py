@@ -287,7 +287,7 @@ class Kernel:
         except:
             self.logDebug("caught exception while sending signum %s to process group (see traceback below)\n%s" %(traceback.format_exc()))
             os.kill(0, signal.SIGKILL)
-        
+
     def serve(self, nbworkers):
         """
         Forever, serve work, until no more there is

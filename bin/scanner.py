@@ -44,7 +44,7 @@ if __name__ == '__main__':
                         ) 
     parser.add_argument("--timeout",
                       dest="timeout",
-                      default=-defaulttimeout,
+                      default=defaulttimeout,
                       help="""specify overall timeout"""
                       )
     options = parser.parse_args()
