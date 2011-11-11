@@ -13,7 +13,8 @@ def pretty_time():
     Returns current time in the form 15:57:00-Thu-3-Nov-2011
     """
     t = time.ctime().split(' ')
-    t.remove('')
+    if '' in t:
+        t.remove('')
     return '-'.join([t[3],t[0],t[2],t[1],t[4]])
 
 
