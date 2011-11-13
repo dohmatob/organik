@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import re
+from binascii import a2b_hex, b2a_hex
 import unittest
 import random
 import md5
@@ -155,6 +156,13 @@ def parsePkt(pkt):
     meta['headers'] = headers
     return meta
 
+def createTag(data, marker):
+    salt = random.getrandbits(32)
+    return b2a_hex(data + marker + str(salt))
+
+def decodeTag(tag, marker):
+    return a2b_hex(tag).split(marker)[0]
+
 def getMD5ChallengeResponse(username,
                             realm,
                             password,
@@ -162,6 +170,9 @@ def getMD5ChallengeResponse(username,
                             uri,
                             nonce
                             ):
+    """
+    Generates response to SIP (MD5) authentication 'challenge' 
+    """
     _tmp1 = md5.new('%s:%s:%s' %(username,realm,password)).hexdigest()
     _tmp2 = md5.new('%s:%s' %(method,uri)).hexdigest()
     return md5.new('%s:%s:%s' %(_tmp1,nonce,_tmp2)).hexdigest()
