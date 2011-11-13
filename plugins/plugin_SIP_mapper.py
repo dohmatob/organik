@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 from SIPutils.packet import makeRequest, parsePkt
 from SIPutils.siplet import SipLet
 from SIPutils.helper import getRange as getPortRange, ip4range, scanlist as getTargetList
-from core import targets
+from coreutils import targets
 
 def targetrule(target):
     return target.getCategory() == "TARGET_IPRANGE"

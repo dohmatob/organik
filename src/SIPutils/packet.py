@@ -6,6 +6,8 @@ import md5
 from response_codes import *
 from libsip.helper import challengeResponse as getChallengeResponse
 
+__author__ = 'd0hm4t06 3. d0p91m4'
+
 SIP_PKT_PATTERNS = {'reqfirstline':re.compile("^(?P<method>(?:REGISTER|OPTIONS|ACK|BYE|CANCEL|NOTIFY|PRACK|INVITE|UPDATE|PUBLISH|MESSAGE|INFO)) sip:(?P<username>.*?)@(?P<domain>.*?) SIP/2.0\r\n"),
                     'respfirstline':re.compile("^SIP/2.0 (?P<code>[1-6][0-9]{2}) .*?\r\n"),
                     'Via':re.compile("(?:Via|v): SIP/2.0/UDP (?P<provider>\S+?);branch=(?P<branch>z9hG4bK\S*?).*?\r\n"),
@@ -46,11 +48,12 @@ def makeRequest(method,
         uri = 'sip:%s' %(dsthost)
     else:
         uri = 'sip:%s@%s' %(extension,dsthost)
-    superheaders['Via'] = 'SIP/2.0/UDP %s:%s;branch=z9hG4bK-%s;rport' %(srchost,srcport,random.getrandbits(80))
+    superheaders['Via'] = 'SIP/2.0/UDP %s:%s;branch=z9hG4bK-%s;rport' %(srchost,srcport,random.getrandbits(32))
     headers['To'] = toaddr
     headers['From'] = fromaddr
-    if localtag is not None:
-        headers['From'] += ';tag=%s' %(localtag)
+    if localtag is None:
+        localtag = random.getrandbits(80)
+    headers['From'] += ';tag=%s' %(localtag)
     headers['User-Agent'] = useragent
     if callid is None:
         callid = '%s' %(random.getrandbits(32))
@@ -131,17 +134,24 @@ def parsePkt(pkt):
     if meta['code'] == AUTHREQ \
             or meta['code'] == PROXYAUTHREQ:
         meta['auth-header'] = dict()
-        match = re.search('(?P<www_or_proxy>(?:WWW|Proxy)-Authenticate): Digest (?P<other_meta>.*)\r\n', pkt)
-        meta['auth-header']['type'] = match.group('www_or_proxy')
-        other_meta = match.group('other_meta')
-        meta['auth-header']['algorithm'] = re.search('algorithm=([a-zA-Z0-9]+)', other_meta).group(1)
-        meta['auth-header']['realm'] = re.search('realm="([-:_\.a-zA-Z0-9]+)"', other_meta).group(1)
-        meta['auth-header']['nonce'] = re.search('nonce="([-:_\.a-zA-Z0-9]+)"', other_meta).group(1)
-        if meta['auth-header']['type'] == 'WWW-Auth-Header':
-            meta['auth-header']['domain'] = re.search('domain="([:-\.a-zA-Z0-9]+)"', other_meta).group(1)
-            meta['auth-header']['qop'] = re.search('qop="([-:\.a-zA-Z0-9]+)"', other_meta).group(1)
-            meta['auth-header']['stale'] = re.search('stale=(?:True|False)', other_meta).group(1)
-            meta['auth-header']['opaque'] = re.search('opaque="([-:\.a-zA-Z0-9]+)"', other_meta).group(1)        
+        auth_match = re.search('(?P<www_or_proxy>(?:WWW|Proxy)-Authenticate): Digest (?P<other_meta>.*)\r\n', pkt)
+        if auth_match:
+            meta['auth-header']['type'] = auth_match.group('www_or_proxy')
+            if meta['auth-header']['type'] == 'WWW-Auth-Header':
+                meta['auth-header']['domain'] = re.search('domain="([-\/\\:\.a-zA-Z0-9]+)"', other_meta).group(1)
+                meta['auth-header']['qop'] = re.search('qop="([-\/\\:\.a-zA-Z0-9]+)"', other_meta).group(1)
+                meta['auth-header']['stale'] = re.search('stale=(?:True|False)', other_meta).group(1)
+                meta['auth-header']['opaque'] = re.search('opaque="([-\/\\:\.a-zA-Z0-9]+)"', other_meta).group(1)
+            other_meta = auth_match.group('other_meta')
+            algo_match = re.search('algorithm=([a-zA-Z0-9]+)', other_meta)
+            meta['auth-header']['realm'] = re.search('realm="([-\/\\:_\.a-zA-Z0-9]+)"', other_meta).group(1)
+            meta['auth-header']['nonce'] = re.search('nonce="([-\/\\+:_\.a-zA-Z0-9]+)"', other_meta).group(1)
+            if algo_match:
+                meta['auth-header']['algorithm'] = algo_match.group(1)
+            else:
+                meta['auth-header']['algorithm'] = 'MD5' 
+        else:
+            del meta['auth-header']
     meta['headers'] = headers
     return meta
 

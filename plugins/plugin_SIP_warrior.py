@@ -8,7 +8,7 @@ from SIPutils.siplet import SipLet
 from SIPutils.packet import makeRequest, parsePkt
 from SIPutils.iterators import fileLineIterator
 from SIPutils.response_codes import *
-from core import targets
+from coreutils import targets
 
 AUTHOR="""d0hm4t06 3. d0p91m4"""
 AUTHOR_EMAIL="""gmdopp@gmail.com"""
@@ -22,7 +22,6 @@ def targetrule(target):
     """
     return target.getCategory() == "TARGET_SIP_SERVICE"
 
-
 class SipWarrior(SipLet):    
     def callback(self, srcaddr, pkt):
         """
@@ -32,32 +31,63 @@ class SipWarrior(SipLet):
         if metadata['headers']['To'] is None:
             # self.logInfo("received failure response: %s" %(metadata['respfirstline']))
             return
+        if self._BADUSERCODE is None:
+            """
+            Perform a test 1st .. to find out what error code is returned for unknown users
+            Quit if weird codes are returned (the SIP UAS must be sick or somethx \L/)
+            """
+            if metadata['code'] == TRYING \
+                    or metadata['code'] == RINGING \
+                    or metadata['code'] == UNAVAILABLE:
+                pass
+            elif metadata['code'] == NOTALLOWED \
+                    or metadata['code'] == NOTIMPLEMENTED \
+                    or metadata['code'] == INEXISTENTTRANSACTION \
+                    or metadata['code'] == BADREQUEST: # yes, protocol imcopatibility is fatal !
+                self.logWarning("received fatal failure response '%s'" %(metadata['respfirstline']))
+                self._noneedtocontinue = True
+            elif metadata['code'] == PROXYAUTHREQ \
+                    or metadata['code'] == INVALIDPASS \
+                    or metadata['code'] == AUTHREQ \
+                    or metadata['code'] == TEMPORARILYUNAVAILABLE:
+                self.logWarning("SIP server replied with an authentication request '%s' for an random extension; there can't be any hope!" %(metadata['respfirstline']))
+                self._noneedtocontinue = True
+            else:
+                self._BADUSERCODE = metadata['code']
+                self.logDebug("BADUSERCODE = %s" % self._BADUSERCODE)
+            return
         match = re.search("^(?P<username>.+?) *?<", metadata['headers']['To'])
         username = match.group('username').replace('"', '').replace("'", "")
-        if metadata['code'] != self._BADUSER:
+        if metadata['code'] != self._BADUSERCODE:
             if username in self._doneusernames:
                 return
-            if 200 <= metadata['code'] < 300: # ACKnowledge all 2XX (success!) responses
+            if (200 <= metadata['code'] < 300) and self._ackenabled: # ACKnowledge all 2XX (success!) responses
                 if metadata['headers']['CSeq'] is None:
                     # self.logDebug("received failure response: %s" %(metadata['firstline']))
                     return
                 match = re.search("^(?P<cseqnum>[0-9]+?) .+?", metadata['headers']['CSeq'])
+                assert match is not None # XXX dirty
                 cseqnum = match.group('cseqnum')
-                ToUri = FromUri = 'sip:%s@%s' %(username, srcaddr[0])
-                req = self.makeRequest(srcaddr,
-                                       method='ACK',
-                                       username=username,
-                                       callid=metadata['headers']['Call-ID'],
-                                       cseqnum=cseqnum,
-                                       ToUri=ToUri,
-                                       FromUri=FromUri,
-                                       )
-                self.sendto(req, srcaddr)
+                toaddr = fromaddr = '"%s"<%s@%s>' %(username,username,srcaddr[0])
+                contact = 'sip:%s@%s' %(username,srcaddr[0])
+                ackpkt = makeRequest('ACK',
+                                     srcaddr[0],
+                                     srcaddr[1],
+                                     self._externalip,
+                                     self._localport,
+                                     toaddr,
+                                     fromaddr,
+                                     contact=contact,
+                                     extension=username,
+                                     callid=metadata['headers']['Call-ID'],
+                                     cseqnum=cseqnum)
+                self.logDebug("sending ACK:\n%s" %ackpkt)
+                self.sendto(ackpkt, srcaddr)
             if metadata['code'] == OKAY \
-                    or metadata['code'] == TEMPORARILYUNAVAILABLE \
                     or metadata['code'] == AUTHREQ \
                     or metadata['code'] == PROXYAUTHREQ \
-                    or metadata['code'] == INVALIDPASS: # username exists!
+                    or metadata['code'] == INVALIDPASS \
+                    or metadata['code'] == TEMPORARILYUNAVAILABLE:
                 self._doneusernames.append(username)
                 authentication = 'reqauth'
                 if metadata['code'] == OKAY:
@@ -69,104 +99,43 @@ class SipWarrior(SipLet):
                                                                               useragent=metadata['headers']['User-Agent'],
                                                                               username=username,
                                                                               authentication=authentication))
+            else:
+                self.logInfo("received '%s' for username '%s'" %(metadata['respfirstline'], username))
         else:
-            self.logInfo("received '%s' for username '%s'" %(metadata['respfirstline'], username))
+            self.logInfo("received failure response '%s' for username '%s'" %(metadata['respfirstline'], username))
             pass
 
     def genNewRequest(self):
         """
         Generate next request to fire on target SIP UAS
         """
-        nextusername = self.getNextScanItem()
-        if not nextusername is None:
-            toaddr = fromaddr = '"%s" <sip:%s@%s>' %(nextusername,nextusername,self._targetip)
-            reqpkt = makeRequest(self._method,
-                                 self._targetip,
-                                 self._targetport,
-                                 self._externalip, 
-                                 self._localport,
-                                      toaddr,
-                                      fromaddr)
-            return (self._targetip,self._targetport), reqpkt        
+        if not self._testreqsent:
+            self._testreqsent = True
+            nextusername = random.getrandbits(9)
+        else:
+            nextusername = self.getNextScanItem()
+            if nextusername is None:
+                return
+        toaddr = fromaddr = '"%s"<sip:%s@%s>' %(nextusername,nextusername,self._targetip)
+        contact = 'sip:%s@%s' %(nextusername,self._targetip)
+        reqpkt = makeRequest(self._method,
+                             self._targetip,
+                             self._targetport,
+                             self._externalip, 
+                             self._localport,
+                             toaddr,
+                             fromaddr,
+                             contact=contact,
+                             extension=nextusername)
+        return (self._targetip,self._targetport), reqpkt        
 
-    def getBADUSER(self):
-        """
-        Perform a test 1st .. to find out what error code is returned for unknown users
-        Quit if weird codes are returned (the SIP UAS must be sick or somethx \L/)
-        """
-        self.bind()
-        if not self._bound:
-            return
-        randomusername = random.getrandbits(32)
-        toaddr = fromaddr = '"%s" <sip:%s@%s>' %(randomusername,randomusername,self._targetip)
-        data = makeRequest(self._method,
-                           self._targetip,
-                           self._targetport,
-                           self._externalip,
-                           self._localport,
-                           toaddr,
-                            fromaddr)
-        try:
-            self.sendto(data,(self._targetip,self._targetport))
-        except socket.error,err:
-            self.logWarning("socket error while sending SIP requset: %s" % err)
-            return
-        # first we identify the assumed reply for an unknown extension 
-        gotbadresponse=False
-        try:
-            while 1:
-                try:
-                    buff,srcaddr = self._sock.recvfrom(8192)
-                except socket.error,err:
-                    self.logWarning("socket error while receiving from remote peer: %s" % err)
-                    return
-                metadata = parsePkt(buff)
-                if metadata['code'] is None: # this is a request, not a response
-                    continue
-                if metadata['code'] == TRYING \
-                        or metadata['code'] == RINGING \
-                        or metadata['code'] == UNAVAILABLE:
-                    gotbadresponse=True
-                elif metadata['code'] == NOTALLOWED \
-                        or metadata['code'] == NOTIMPLEMENTED \
-                        or metadata['code'] == INEXISTENTTRANSACTION \
-                        or metadata['code'] == BADREQUEST: # yes, protocol imcopatibility is fatal
-                    self.logWarning("received fatal failure response: %s" %(metadata['respfirstline']))
-                    return
-                elif metadata['code'] == PROXYAUTHREQ \
-                        or metadata['code'] == INVALIDPASS \
-                        or metadata['code'] == AUTHREQ: # 
-                    self.logWarning("SIP server replied with an authentication request '%s' for an random extension; there can be hope!" %(metadata['respfirstline']))
-                    return
-                else:
-                    self._BADUSER = metadata['code']
-                    self.logDebug("BADUSER code = %s" % self._BADUSER)
-                    gotbadresponse=False
-                    break
-        except socket.timeout:
-            if gotbadresponse:
-                self.logWarning("The response we got was not good: %s" % `buff`)
-            else:
-                self.logWarning("No server response - are you sure that this PBX is listening? run svmap against it to find out")
-            return
-        except (AttributeError,ValueError,IndexError), err:
-            print err
-            self.logWarning("bad response .. bailing out")            
-            return
-        except socket.error,err:
-            self.logWarning("socket error: %s" % err)
-            return
-        if self._BADUSER == AUTHREQ:
-            self.logWarning("BADUSER code = %s - svwar will probably not work!" % self._BADUSER)
-
-    def execute(self, ip, port, dictionary, method="REGISTER"):
+    def execute(self, targethost, targetport, dictionary, method="REGISTER", ackenabled=True):
         self._method = method
-        self._targetip = ip
-        self._targetport = port
-        self._BADUSER = None
-        self.getBADUSER()
-        if self._BADUSER == None:
-            return
+        self._targetip = socket.gethostbyname(targethost)
+        self._targetport = targetport
+        self._ackenabled = ackenabled
+        self._testreqsent = False
+        self._BADUSERCODE = None
         self._doneusernames = list()
         try:
             self._scaniter = fileLineIterator(open(dictionary, 'r'))

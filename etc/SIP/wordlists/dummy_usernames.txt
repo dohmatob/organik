@@ -1,3 +1,9 @@
+toor
+superman
+terminator
+root
+sip
+SIP
 200
 500
 jack
@@ -11,8 +17,8 @@ jAckjilljack
 103
 wElcome
 104
-101
 welcome
+101
 First Extension
 pingtel
 

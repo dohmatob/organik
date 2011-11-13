@@ -101,9 +101,6 @@ class SipCracker(SipLet):
                              auth=auth)
         return ((self._targetip,self._targetport), reqpkt)
 
-    def noNeedToContinue(self):
-        return self._passwordcracked or self._notfound
-
     def callback(self, srcaddr, pkt):
         metadata = parsePkt(pkt)
         if metadata['code'] == PROXYAUTHREQ:
@@ -125,6 +122,7 @@ class SipCracker(SipLet):
                 self._challenges.append((metadata['auth-header']['nonce'],metadata['headers']['Call-ID']))
         elif metadata['code'] == OKAY:
             self._passwordcracked = True
+            self._noneedtocontinue = True
             match = re.search('tag=([+\.;:a-zA-Z0-9]*)',metadata['headers']['From'])
             assert not match is None, "No 'From' tag: Remote SIP UAC 'ate' our tag!"
             tag = match.group(1)
@@ -137,7 +135,7 @@ class SipCracker(SipLet):
                 self.logInfo("user/extension '%s' is passwordless" %creds[0]) # XXX report vuln/info ?
         elif metadata['code'] == NOTFOUND:
             self.logWarning("received fatal response '%s' for user/extension '%s'" %(metadata['respfirstline'],self._username))
-            self._notfound = True
+            self._noneedtocontinue = True
         elif metadata['code'] == INVALIDPASS:
             pass
         elif metadata['code'] == TRYING:
@@ -156,11 +154,10 @@ class SipCracker(SipLet):
         self._targetisproxy = False
         self._reusenonce = False
         self._passwordcracked = False
-        self._notfound = False
         self._challenges = list()
         self._testreqsent = False
         self.mainLoop()
-        if not (self._passwordcracked or self._notfound):
+        if not self._passwordcracked:
             self.logInfo("could'nt crack password for '%s" %(self._username))
 
 

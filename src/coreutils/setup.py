@@ -1,13 +1,13 @@
 from setuptools import setup
 
-NAME='core'
-NAME='core'
+NAME='coreutils'
+NAME='coreutils'
 VERSION='0.1.0'
 LICENSE='UNDECIDED'
 MAINTAINER=AUTHOR='d0hm4t06 3. d0p91m4'
 MAINTAINER_EMAIL=AUTHOR_EMAIL='gmdopp@gmail.com'
-PACKAGES=['core',]
-PACKAGE_DIR={'core':'.'}
+PACKAGES=['coreutils',]
+PACKAGE_DIR={'coreutils':'.'}
 
 setup(name=NAME,
       version=VERSION,

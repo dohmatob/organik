@@ -1,6 +1,9 @@
 """
 Here be grouped most important SIP response codes
 """
+
+__author__ = 'd0hm4t06 3. d0p91m4'
+
 PROXYAUTHREQ = 407 
 AUTHREQ = 401
 OKAY = 200
