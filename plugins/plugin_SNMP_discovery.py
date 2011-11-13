@@ -7,7 +7,7 @@ import multiprocessing
 import signal
 import os
 import traceback
-from core import targets
+from coreutils import targets
 
 DESCRIPTION="""SNMP discovery module"""
 AUTHOR="""d0hm4t06 3. d0p91m4"""

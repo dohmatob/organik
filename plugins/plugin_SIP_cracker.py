@@ -8,7 +8,7 @@ import random
 from binascii import a2b_hex, b2a_hex
 from argparse import ArgumentParser
 from SIPutils.iterators import fileLineIterator
-from SIPutils.packet import makeRequest, parsePkt
+from SIPutils.packet import makeRequest, parsePkt, createTag, decodeTag
 from SIPutils.siplet import SipLet
 from SIPutils.response_codes import *
 
@@ -25,25 +25,9 @@ def targetrule(target):
 
 
 class SipCracker(SipLet):
-    def createTag(self, trial_passwd):
-        return b2a_hex('%s:%s' %(self._username,trial_passwd) + '\xDEADBEEF' + str(random.getrandbits(32)))
-
-    def decodeTag(self, tag):
-        try:
-            dump = a2b_hex(tag)
-        except:
-            self.logWarning("couldn't decode tag: %s" %(tag))
-            return None
-        tmp = dump.split('\xDEADBEEF')
-        if len(tmp) != 2:
-            self.logWarning("couldn't decode tag: %s" %(tag))
-            return None
-        creds = tmp[0].split(':')
-        if not (0 < len(creds) < 3):
-            self.logWarning("couldn't decode tag: %s" %(tag))
-            return None
-        return creds
-        
+    """
+    CRACKER FOR SIP PASSWORDS
+    """
     def genNewRequest(self): 
         """
         Generate next request to fire on target SIP UAS
@@ -70,7 +54,7 @@ class SipCracker(SipLet):
             if nextpasswd is None:
                 return
             self.logDebug('trying password: %s' %nextpasswd)
-            localtag = self.createTag(nextpasswd)
+            localtag = createTag('%s:%s' %(self._username,nextpasswd), '\xDEADBEEF') # self.createTag(nextpasswd)
             auth = dict()
             auth['username'] = self._username
             auth['realm'] = self._realm
@@ -101,9 +85,6 @@ class SipCracker(SipLet):
                              auth=auth)
         return ((self._targetip,self._targetport), reqpkt)
 
-    def noNeedToContinue(self):
-        return self._passwordcracked or self._notfound
-
     def callback(self, srcaddr, pkt):
         metadata = parsePkt(pkt)
         if metadata['code'] == PROXYAUTHREQ:
@@ -125,10 +106,11 @@ class SipCracker(SipLet):
                 self._challenges.append((metadata['auth-header']['nonce'],metadata['headers']['Call-ID']))
         elif metadata['code'] == OKAY:
             self._passwordcracked = True
+            self._noneedtocontinue = True
             match = re.search('tag=([+\.;:a-zA-Z0-9]*)',metadata['headers']['From'])
             assert not match is None, "No 'From' tag: Remote SIP UAC 'ate' our tag!"
             tag = match.group(1)
-            creds = self.decodeTag(tag)
+            creds = decodeTag(tag, '\xDEADBEEF').split(':')
             assert (not creds is None) and 0 < len(creds) < 3, "couln't not decode to tag: %s" %(tag)
             self.logDebug("'%s' response received" %(metadata['respfirstline']))
             if len(creds) > 1:
@@ -137,7 +119,7 @@ class SipCracker(SipLet):
                 self.logInfo("user/extension '%s' is passwordless" %creds[0]) # XXX report vuln/info ?
         elif metadata['code'] == NOTFOUND:
             self.logWarning("received fatal response '%s' for user/extension '%s'" %(metadata['respfirstline'],self._username))
-            self._notfound = True
+            self._noneedtocontinue = True
         elif metadata['code'] == INVALIDPASS:
             pass
         elif metadata['code'] == TRYING:
@@ -156,11 +138,10 @@ class SipCracker(SipLet):
         self._targetisproxy = False
         self._reusenonce = False
         self._passwordcracked = False
-        self._notfound = False
         self._challenges = list()
         self._testreqsent = False
         self.mainLoop()
-        if not (self._passwordcracked or self._notfound):
+        if not self._passwordcracked:
             self.logInfo("could'nt crack password for '%s" %(self._username))
 
 

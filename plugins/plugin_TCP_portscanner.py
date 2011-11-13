@@ -9,7 +9,7 @@ import fcntl
 import sys
 import os
 from optparse import OptionParser
-from core import targets 
+from coreutils import targets 
 
 DESCRIPTION="""Plugin scans host for open TCP ports by using the connect-select technique"""
 AUTHOR="""d0hm4t06 3. d0p91m4"""

@@ -9,6 +9,8 @@ import re
 import unittest
 import errno
 
+__author__ = 'd0hm4t06 E. d0p91m4'
+
 class SipLet:
     _CHUNK_SIZE = 8192
     def __init__(self, bindingip="0.0.0.0", localport=5060, selecttime=0.005, sockettimeout=3, pcallback=None):
@@ -17,6 +19,7 @@ class SipLet:
         self._bindingip = bindingip
         self._selecttime = selecttime
         self._nomoretoscan = False
+        self._noneedtocontinue = False
         self._pcallback = pcallback
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # we do UDP
         self._sock.settimeout(self._sockettimeout)
@@ -88,7 +91,7 @@ class SipLet:
             if srcaddr == (self._externalip, self._localport):
                 self.logDebug("our own pkt ..")
             # else:
-            #     self.logDebug("SIP req from %s:%s" %(srcaddr[0],srcaddr[1]))
+            #     self.logDebug("SIP req from %s:%s:\n%s" %(srcaddr[0],srcaddr[1],buf))
         else:
             self.logWarning("got gabbage pkt: %s" %(buf))
 
@@ -112,7 +115,7 @@ class SipLet:
         This boolean method is called to check whether some global goal 
         has been achieved which makes the rest of the scan useless. 
         """
-        return False
+        return self._noneedtocontinue
 
     def mainLoop(self):
         """
@@ -121,7 +124,7 @@ class SipLet:
         self.bind()
         if not self._bound:
             return
-        while True:
+        while not self.noNeedToContinue():
             try:
                 r, w, x = select.select([self._sock], list(), list(), self._selecttime)
                 if r: # somebody talking; let's see what they saying ..
@@ -132,14 +135,15 @@ class SipLet:
                     except socket.error:
                         continue
                 else: # nobody talking; let's rule ..
-                    if self.noNeedToContinue():
-                        break
                     if self.noMoreToScan():
                         try:
-                            while True:
+                            self.logDebug('making sure no packets are lost ..')
+                            while not self.noNeedToContinue():
                                 self.getResponse()
                         except socket.error:
                             break
+                    if self.noNeedToContinue():
+                        break
                     req = self.genNewRequest()
                     if req is None:
                         continue
@@ -148,6 +152,9 @@ class SipLet:
                         bytes = self.sendto(pkt, dstaddr)
                     except socket.error:
                         self.logWarning("socket error while sending SIP pkt to %s:%s (see traceback below)\n%s" %(dstaddr[0],dstaddr[1],traceback.format_exc()))        
+            except KeyboardInterrupt:
+                self.logDebug('caught your KBI; quiting ..')
+                sys.exit(1)
             except:
                 self.logWarning("error in select.select (see traceback below)\n%s" %(traceback.format_exc()))
 

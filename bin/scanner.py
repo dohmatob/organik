@@ -5,7 +5,7 @@ import os
 import sys
 import time
 import math
-from core import engine, targets
+from coreutils import engine, targets
 
 if __name__ == '__main__':
     old_cwd = os.getcwd()
