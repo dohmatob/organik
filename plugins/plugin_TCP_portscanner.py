@@ -140,7 +140,7 @@ class SelectScanner:
             vid = 1 # XXX dummy
             self._pcallback.reportVuln(vid, raw_output)
         else:
-            self.logInfo('OPEN PORTS FOUND: %s' %(self._open_ports))
+            self.logInfo('OPEN PORTS FOUND: %s' %(', '.join(map(lambda port: str(port), self._open_ports))))
 
     def freeSock(self, port):
         del self._socks[port]

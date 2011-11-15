@@ -22,6 +22,7 @@ def targetrule(target):
     """
     return target.getCategory() == "TARGET_SIP_SERVICE"
 
+
 class SipWarrior(SipLet):    
     def callback(self, srcaddr, pkt):
         """

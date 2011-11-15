@@ -1,6 +1,8 @@
 toor
 superman
 terminator
+ratatouille
+billgates
 root
 sip
 SIP

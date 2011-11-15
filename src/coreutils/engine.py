@@ -77,7 +77,7 @@ class PluginCallback:
 
     def announceNewTarget(self, target):
         """
-        Announce new target (a plugin invokes this method when they have found a new 
+        Announces new target (a plugin invokes this method when they have found a new 
         target/'hole', but for which they are 'unqualified' to further explore; this 
         way, more specialized plugins are invoked to explore the announced target
         """
@@ -160,7 +160,7 @@ class Kernel:
 
     def loadPlugin(self, plugin_name):
         """
-        Load given plugin
+        Loads given plugin
         """
         try:
             self.logDebug("loadin: %s" %(plugin_name))
@@ -176,7 +176,7 @@ class Kernel:
 
     def loadPlugins(self, plugin_dir, plugin_regexp='plugin_*.py', donotload=list()):
         """
-        Load plugins all from specified directory, all except an option list of plugins
+        Loads all plugins from specified directory, all except an option list of plugins
         """
         if not os.path.isdir(plugin_dir):
             self.logWarning("can't access plugin directory '%s' (does directory exist)" %(plugin_dir))
@@ -191,7 +191,7 @@ class Kernel:
 
     def runPlugin(self, plugin_name, target):
         """
-        Run named plugin on target
+        Runs named plugin on target
         """
         pcallback = PluginCallback(plugin_name,
                                    target,
@@ -210,7 +210,7 @@ class Kernel:
             
     def targetExists(self, target):
         """
-        Chech whether given target was already announced
+        Checks whether given target was already announced
         """
         category = target.getCategory()
         if not category in self._target_profile:
@@ -220,7 +220,7 @@ class Kernel:
 
     def addTarget(self, target):
         """
-        Add given target to profile
+        Adjoints given target to foregoing profile
         """
         category = target.getCategory()
         if category in self._target_profile.keys():
@@ -250,6 +250,9 @@ class Kernel:
                 self._task_queue.put((plugin_name, target))
 
     def signalHandler(self, signum, frame):
+        """
+        Handler for signals trapped herein
+        """
         if os.getpid() != self._pid:
             return
         if signum == signal.SIGINT:
@@ -263,7 +266,7 @@ class Kernel:
 
     def devil(self):
         """
-        Dynamically poll kernel task queue
+        Dynamically polls kernel task queue
         """
         signal.signal(signal.SIGINT, signal.SIG_DFL)
         signal.signal(signal.SIGALRM, signal.SIG_DFL)
@@ -291,7 +294,7 @@ class Kernel:
 
     def serve(self, nbworkers):
         """
-        Forever, serve work, until no more there is
+        Forever, serves work, until no more there is
         """
         for z in xrange(nbworkers):
             worker = self._WORKER_MODEL(target=self.devil,)
@@ -302,7 +305,7 @@ class Kernel:
 
     def bootstrap(self, target_profile, plugin_dir, donotload=list(), nbworkers=multiprocessing.cpu_count()*20, timeout=0):
         """
-        Kick-off
+        Kick-off !
         """
         if not self._debug:
             self.logInfo("entering silent mode; no debug output will be produced")

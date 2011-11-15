@@ -153,7 +153,7 @@ class SipLet:
                     except socket.error:
                         self.logWarning("socket error while sending SIP pkt to %s:%s (see traceback below)\n%s" %(dstaddr[0],dstaddr[1],traceback.format_exc()))        
             except KeyboardInterrupt:
-                self.logDebug('caught your KBI; quiting ..')
+                self.logDebug('caught your KBI; quitting ..')
                 sys.exit(1)
             except:
                 self.logWarning("error in select.select (see traceback below)\n%s" %(traceback.format_exc()))

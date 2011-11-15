@@ -204,7 +204,7 @@ class Session(object):
         res = client_intf.delete_session(self)
         return res
 
-import libnetsnmp as netsnmp
+import netsnmp
         
 def snmpget(*args, **kargs):
     sess = Session(**kargs)

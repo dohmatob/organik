@@ -18,26 +18,27 @@ if __name__ == '__main__':
     os.chdir(old_cwd)
     parser = ArgumentParser(version="w0rkz 0f d0hm4t06 3. d0p91m4")
     parser.add_argument("--target",
-                      action="append",
-                      dest="target",
-                      default=list(),
-                      help="""specify target to scan"""
-                      )
+                        action="append",
+                        dest="target",
+                        default=list(),
+                        help="""specify target to scan"""
+                        )
     parser.add_argument("--nbworkers",
-                      dest="nbworkers",
-                      default=defaultnbworkerspercpu*20,
-                      help="""specify number of workers (default is %s per CPU)""" %(defaultnbworkerspercpu)
-                      )
+                        dest="nbworkers",
+                        type=int,
+                        default=defaultnbworkerspercpu*20,
+                        help="""specify number of workers (default is %s per CPU)""" %(defaultnbworkerspercpu)
+                        )
     parser.add_argument("--plugindir",
-                      dest="plugindir",
-                      default=defaultplugindir,
-                      help="""specify directory from which to load plugins (default is production/)"""
-                      )
+                        dest="plugindir",
+                        default=defaultplugindir,
+                        help="""specify directory from which to load plugins (default is production/)"""
+                        )
     parser.add_argument("--quiet",
-                      dest="quiet",
-                      default=False,
-                      action="store_true",
-                      help="""turn off debug mode""",
+                        dest="quiet",
+                        default=False,
+                        action="store_true",
+                        help="""turn off debug mode""",
                       )
     parser.add_argument("--donotload",
                         action="append",
@@ -46,9 +47,10 @@ if __name__ == '__main__':
                         help="""specify plugin to ignore""",
                         ) 
     parser.add_argument("--timeout",
-                      dest="timeout",
-                      default=defaulttimeout,
-                      help="""specify overall timeout"""
+                        dest="timeout",
+                        type=int,
+                        default=defaulttimeout,
+                        help="""specify overall timeout"""
                       )
     options = parser.parse_args()
     os.chdir(_tmp)
@@ -63,5 +65,6 @@ if __name__ == '__main__':
     k.bootstrap(target_profile, 
                 '%s/%s' %(rootdir,options.plugindir), 
                 options.donotload, 
-                nbworkers=int(options.nbworkers), 
-                timeout=int(math.floor(float(options.timeout))))
+                nbworkers=options.nbworkers, 
+                timeout=options.timeout)
+

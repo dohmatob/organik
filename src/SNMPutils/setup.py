@@ -28,7 +28,7 @@ else:
     libs = re.findall(r"-l(\S+)", netsnmp_libs)
 
 setup(
-    name="libnetsnmp", version="1.0a1",
+    name="netsnmp", version="1.0a1",
     description = 'The Net-SNMP Python Interface',
     author = 'G. S. Marzot',
     maintainer='d0hm4t06 3. d0p91m4',
@@ -40,7 +40,7 @@ setup(
     test_suite = "netsnmp.tests.test",
 
     ext_modules = [
-       Extension("libnetsnmp.client_intf", ["libnetsnmp/client_intf.c"],
+       Extension("netsnmp.client_intf", ["netsnmp/client_intf.c"],
                  library_dirs=libdirs,
                  include_dirs=incdirs,
                  libraries=libs )

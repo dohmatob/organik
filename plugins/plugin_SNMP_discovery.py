@@ -1,4 +1,5 @@
-import libnetsnmp
+#!/usr/bin/env python
+import netsnmp
 import re
 import sys
 import math
@@ -53,15 +54,15 @@ class SnmpProbe:
         if (target_ip,version,) in self._discoveries:
             return
         self.logDebug("probing %s for SNMPv%s (%s)" %(target_ip, version, community))
-        session = libnetsnmp.Session(Version=version,
+        session = netsnmp.Session(Version=version,
                                   DestHost=target_ip,
                                   Community=community,)
-        oids = libnetsnmp.VarList(libnetsnmp.Varbind("sysDescr", 0), 
-                               libnetsnmp.Varbind("sysName", 0), 
-                               libnetsnmp.Varbind("sysUpTime", 0),
-                               libnetsnmp.Varbind("hrMemorySize", 0),
-                               libnetsnmp.Varbind("sysLocation", 0),
-                               libnetsnmp.Varbind("sysContact", 0),)
+        oids = netsnmp.VarList(netsnmp.Varbind("sysDescr", 0), 
+                               netsnmp.Varbind("sysName", 0), 
+                               netsnmp.Varbind("sysUpTime", 0),
+                               netsnmp.Varbind("hrMemorySize", 0),
+                               netsnmp.Varbind("sysLocation", 0),
+                               netsnmp.Varbind("sysContact", 0),)
         """
         command-line example: snmpget -v1 -c private 192.168.46.1 sysDescr.0 sysName.0 \ 
         sysUpTime.0 hrMemorySize.0 sysContact.0 sysLocation.0
