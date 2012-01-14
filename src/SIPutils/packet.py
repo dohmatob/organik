@@ -9,7 +9,7 @@ from libsip.helper import challengeResponse as getChallengeResponse
 
 __author__ = 'd0hm4t06 3. d0p91m4'
 
-SIP_PKT_PATTERNS = {'reqfirstline':re.compile("^(?P<method>(?:REGISTER|OPTIONS|ACK|BYE|CANCEL|NOTIFY|PRACK|INVITE|UPDATE|PUBLISH|MESSAGE|INFO)) sip:(?P<username>.*?)@(?P<domain>.*?) SIP/2.0\r\n"),
+SIP_PKT_PATTERNS = {'reqfirstline':re.compile("^(?P<method>(?:REGISTER|OPTIONS|ACK|BYE|CANCEL|NOTIFY|PRACK|INVITE|UPDATE|PUBLISH|MESSAGE|INFO)) sip:.*? SIP/2.0\r\n"),
                     'respfirstline':re.compile("^SIP/2.0 (?P<code>[1-6][0-9]{2}) .*?\r\n"),
                     'Via':re.compile("(?:Via|v): SIP/2.0/UDP (?P<provider>\S+?);branch=(?P<branch>z9hG4bK\S*?).*?\r\n"),
                     'To':re.compile("(?:To|t): (?P<username>\S+?) *?<(?P<uri>sip:\S+?@.+?)>(?:; *?tag=(?P<tag>.*?))?\r\n"),

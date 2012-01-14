@@ -9,6 +9,7 @@ ANYCOM
 Admin
 C0de
 CISCO
+demopublic
 CR52401
 IBM
 ILMI

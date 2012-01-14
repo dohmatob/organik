@@ -1,167 +1,127 @@
+from SIPutils.packet import makeRequest, parsePkt, SIP_PKT_PATTERNS
+# from SIPutils.helper import getRange as getPortRange, ip4range, scanlist as getTargets
 import socket
 import sys
-import os
 import select
-import time
-import random
-import traceback
-import re
-import unittest
-import errno
-
-__author__ = 'd0hm4t06 E. d0p91m4'
 
 class SipLet:
-    _CHUNK_SIZE = 8192
-    def __init__(self, bindingip="0.0.0.0", localport=5060, selecttime=0.005, sockettimeout=3, pcallback=None):
+    def __init__(self, 
+                 sockettimeout=3,
+                 selecttimeout=0.03,
+                 bindingip='0.0.0.0',
+                 xternalip=None,
+                 pcallback=None):
         self._sockettimeout = sockettimeout
-        self._localport = localport
+        self._selecttimeout = selecttimeout 
         self._bindingip = bindingip
-        self._selecttime = selecttime
-        self._nomoretoscan = False
-        self._noneedtocontinue = False
+        self._xternalip = xternalip
         self._pcallback = pcallback
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # we do UDP
-        self._sock.settimeout(self._sockettimeout)
-        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1) # so we can send broadcasts
-        self._donetargets = list() # list of servers on which we've confirmed SIP
+        self._localport = 5060
         self._bound = False
+        self._nomoretoscan = False
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._sock.settimeout(self._sockettimeout)
+        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
     def logDebug(self, msg):
-        if self._pcallback:
+        if self._pcallback is not None:
             self._pcallback.logDebug(msg)
         else:
-            print "-DEBUG- %s" %(msg)        
+            print '-DEBUG- %s' %msg
 
     def logInfo(self, msg):
-        if self._pcallback:
+        if self._pcallback is not None:
             self._pcallback.logInfo(msg)
         else:
-            print "-INFO- %s" %(msg)
+            print '-INFO- %s' %msg
 
     def logWarning(self, msg):
-        if self._pcallback:
+        if self._pcallback is not None:
             self._pcallback.logWarning(msg)
         else:
-            print "-WARNING- %s" %(msg)
-        
+            print '-WARNING- %s' %msg
+
     def bind(self):
-        """
-        Bind to local address = (externalip, localport)
-        """
         if self._bound:
             return
-        while self._localport < 65536:
+        while self._localport < 65535:
             try:
-                self._sock.bind((self._bindingip,self._localport))
+                self._sock.bind(('', self._localport))
                 break
             except socket.error:
-                self.logWarning("couldn't bind to localport %s" %(self._localport))
+                self.logWarning("couldn't bind local address: %s:%s" %(self._bindingip, self._localport))
                 self._localport += 1
-        self._externalip = "127.0.0.1"
-        if self._localport == 65535:
-            self.logWarning("couldn't bind to any local port")
-            return
-        self.logDebug("bound to %s:%s" %(self._bindingip, self._localport))
-        try:
-            self._externalip = socket.gethostbyname(socket.gethostname())
-        except socket.error:
-            pass
+        assert self._localport < 65535, "couldn't bind to any any local address" 
         self._bound = True
-  
-    def sendto(self, pkt, addr):
-        while pkt:
-            bytes = self._sock.sendto(pkt[:self._CHUNK_SIZE], addr)
-            pkt = pkt[bytes:]
+        self.logDebug("bound to local address:%s: %s" %(self._bindingip, self._localport))
+        if self._xternalip is None:
+            if self._bindingip != '0.0.0.0':
+                self._xternalip = self._bindingip
+            else:
+                self._xternalip = '127.0.0.1'
+        self.logDebug("using xternal ip: %s" %(self._xternalip))
         
-    def treated(self, addr):
-        return False
+    def getNextScanItem(self):
+        return self._scaniter.next()
 
     def getResponse(self):
-        """
-        Read incoming response from socket
-        """
-        buf, srcaddr = self._sock.recvfrom(self._CHUNK_SIZE)
-        if self.treated(srcaddr):
-            return
-        if re.search("^SIP/2.0 [1-6][0-9]{2} ", buf):  # is response pkt
-            self._donetargets.append(srcaddr)
-            self.callback(srcaddr, buf)
-        elif re.search('^(REGISTER|OPTIONS|ACK|BYE|CANCEL|NOTIFY|PRACK|INVITE|UPDATE|PUBLISH|MESSAGE|INFO) sip:\S*', buf):
-            if srcaddr == (self._externalip, self._localport):
-                self.logDebug("our own pkt ..")
-            # else:
-            #     self.logDebug("SIP req from %s:%s:\n%s" %(srcaddr[0],srcaddr[1],buf))
-        else:
-            self.logWarning("got gabbage pkt: %s" %(buf))
+        pkt, srcaddr = self._sock.recvfrom(8192)
+        match = SIP_PKT_PATTERNS['reqfirstline'].search(pkt)
+        if match is not None:
+            if srcaddr == (self._xternalip,self._localport):
+                self.logDebug("recv'd our won pkt ..")
+            else:
+                self.logDebug("recv'd SIP request '%s' from %s:%s" %(match.group(),srcaddr[0],srcaddr[1]))
+            return 
+        self.pktCallback(srcaddr, pkt)
 
-    def noMoreToScan(self):
-        """
-        This boolean method determines whether scan items have been exhausted
-        """
-        return self._nomoretoscan
+    def mustDie(self):
+        return False
 
-    def getNextScanItem(self):
-        """
-        This method fetches next scan item
-        """
-        try:
-            return self._scaniter.next()
-        except StopIteration:
-            self._nomoretoscan = True
-
-    def noNeedToContinue(self):
-        """
-        This boolean method is called to check whether some global goal 
-        has been achieved which makes the rest of the scan useless. 
-        """
-        return self._noneedtocontinue
+    def mayGenerateNextRequest(self):
+        return True
 
     def mainLoop(self):
-        """
-        ARGANIC CHEMISTRY
-        """
         self.bind()
-        if not self._bound:
-            return
-        while not self.noNeedToContinue():
+        while True:
+            if self.mustDie():
+                break
             try:
-                r, w, x = select.select([self._sock], list(), list(), self._selecttime)
-                if r: # somebody talking; let's see what they saying ..
-                    if self.noNeedToContinue():
+                r, w, x = select.select([self._sock], [], [], self._selecttimeout)
+                if r:
+                    if self.mustDie():
                         break
                     try:
                         self.getResponse()
-                    except socket.error:
+                    except socket.timeout:
                         continue
-                else: # nobody talking; let's rule ..
-                    if self.noMoreToScan():
+                else:
+                    if self.mustDie():
+                        break
+                    if self._nomoretoscan or not self.mayGenerateNextRequest():
+                        self.logDebug("making sure no pkts are lost ..")
                         try:
-                            self.logDebug('making sure no packets are lost ..')
-                            while not self.noNeedToContinue():
+                            while True:
+                                if self.mustDie():
+                                    break
                                 self.getResponse()
                         except socket.error:
                             break
-                    if self.noNeedToContinue():
-                        break
-                    req = self.genNewRequest()
-                    if req is None:
-                        continue
-                    dstaddr,pkt = req
-                    try:
-                        bytes = self.sendto(pkt, dstaddr)
-                    except socket.error:
-                        self.logWarning("socket error while sending SIP pkt to %s:%s (see traceback below)\n%s" %(dstaddr[0],dstaddr[1],traceback.format_exc()))        
+                    if self.mayGenerateNextRequest():
+                        try:
+                            dstaddr, reqpkt = self.genNextRequest()
+                        except StopIteration:
+                            self._nomoretoscan = True
+                            continue
+                        self._sock.sendto(reqpkt, dstaddr)
+            except select.error:
+                break
             except KeyboardInterrupt:
-                self.logDebug('caught your KBI; quitting ..')
+                self.logDebug("caught your ^C; quitting ..")
                 sys.exit(1)
-            except:
-                self.logWarning("error in select.select (see traceback below)\n%s" %(traceback.format_exc()))
 
+        
 
-class TestSIPlet(unittest.TestCase):
-    pass
-
-
-if __name__ == '__main__':
-    unittest.main()
+# if __name__ == "__main__":
+#     m = SipLet()
+#     m.execute([sys.argv[1]], sys.argv[2])

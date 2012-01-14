@@ -28,64 +28,72 @@ class SipCracker(SipLet):
     """
     CRACKER FOR SIP PASSWORDS
     """
-    def genNewRequest(self): 
+    def genNextRequest(self): 
         """
         Generate next request to fire on target SIP UAS
         """
         toaddr = fromaddr = '"%s" <sip:%s@%s>' %(self._username,self._username,self._targetip)
         contact = 'sip:%s@%s' %(self._username,self._targetip)
-        if not self._testreqsent:
-            self._testreqsent = True
+        if not self._testpktgenerated:
+            self._testpktgenerated = True
             self.logDebug('sending test request')
             reqpkt = makeRequest('REGISTER',
-                                      self._targetip,
-                                      self._targetport,  
-                                      self._externalip,
-                                      self._localport,
-                                      toaddr,
-                                      fromaddr,
-                                      extension=self._username, 
-                                      cseqnum=1)
-            return ((self._targetip,self._targetport), reqpkt)
-        localtag = None
-        cseqnum = 1
-        if len(self._challenges) > 0:
-            nextpasswd = self.getNextScanItem()
-            if nextpasswd is None:
-                return
-            self.logDebug('trying password: %s' %nextpasswd)
-            localtag = createTag('%s:%s' %(self._username,nextpasswd), '\xDEADBEEF') # self.createTag(nextpasswd)
-            auth = dict()
-            auth['username'] = self._username
-            auth['realm'] = self._realm
-            auth['algorithm'] = self._digestalgorithm
-            if self._reusenonce:
-                auth['nonce'] = self._staticnonce
-                callid = self._staticcallid
-            else:
-                auth['nonce'], callid = self._challenges.pop()
-                auth['proxy'] = self._targetisproxy
-                auth['password'] = nextpasswd
-                cseqnum = 2
+                                 self._targetip,
+                                 self._targetport,  
+                                 self._xternalip,
+                                 self._localport,
+                                 toaddr,
+                                 fromaddr,
+                                 extension=self._username, 
+                                 cseqnum=1)
         else:
-            auth = None
-            callid = None
-        reqpkt = makeRequest('REGISTER',
-                             self._targetip,
-                             self._targetport,  
-                             self._externalip,
-                             self._localport,
-                             toaddr,
-                             fromaddr,
-                             extension=self._username, 
-                             callid=callid,
-                             contact=contact,
-                             cseqnum=cseqnum,
-                             localtag=localtag,
-                             auth=auth)
+            localtag = None
+            cseqnum = 1
+            if len(self._challenges) > 0:
+                nextpasswd = self.getNextScanItem()
+                self.logDebug('trying password: %s' %nextpasswd)
+                localtag = createTag('%s:%s' %(self._username,nextpasswd), '\xDEADBEEF') # self.createTag(nextpasswd)
+                auth = dict()
+                auth['username'] = self._username
+                auth['realm'] = self._realm
+                auth['algorithm'] = self._digestalgorithm
+                if self._reusenonce:
+                    auth['nonce'] = self._staticnonce
+                    callid = self._staticcallid
+                else:
+                    auth['nonce'], callid = self._challenges.pop()
+                    auth['proxy'] = self._targetisproxy
+                    auth['password'] = nextpasswd
+                    cseqnum = 2
+            else:
+                auth = None
+                callid = None
+            reqpkt = makeRequest('REGISTER',
+                                 self._targetip,
+                                 self._targetport,  
+                                 self._xternalip,
+                                 self._localport,
+                                 toaddr,
+                                 fromaddr,
+                                 extension=self._username, 
+                                 callid=callid,
+                                 contact=contact,
+                                 cseqnum=cseqnum,
+                                 localtag=localtag,
+                                 auth=auth)
         return ((self._targetip,self._targetport), reqpkt)
 
-    def callback(self, srcaddr, pkt):
+    def mayGenerateNextRequest(self):
+        if not self._testpktgenerated:
+            return True
+        else:
+            return self._targetisalive
+
+    def mustDie(self):
+        return self._passwordcracked or self._failed or self._notfound
+
+    def pktCallback(self, srcaddr, pkt):
+        self._targetisalive = True
         metadata = parsePkt(pkt)
         if metadata['code'] == PROXYAUTHREQ:
             self._targetisproxy = True
@@ -106,7 +114,6 @@ class SipCracker(SipLet):
                 self._challenges.append((metadata['auth-header']['nonce'],metadata['headers']['Call-ID']))
         elif metadata['code'] == OKAY:
             self._passwordcracked = True
-            self._noneedtocontinue = True
             match = re.search('tag=([+\.;:a-zA-Z0-9]*)',metadata['headers']['From'])
             assert not match is None, "No 'From' tag: Remote SIP UAC 'ate' our tag!"
             tag = match.group(1)
@@ -119,15 +126,15 @@ class SipCracker(SipLet):
                 self.logInfo("user/extension '%s' is passwordless" %creds[0]) # XXX report vuln/info ?
         elif metadata['code'] == NOTFOUND:
             self.logWarning("received fatal response '%s' for user/extension '%s'" %(metadata['respfirstline'],self._username))
-            self._noneedtocontinue = True
+            self._notfound = True
         elif metadata['code'] == INVALIDPASS:
             pass
         elif metadata['code'] == TRYING:
             pass
         else:
             self.logWarning("Got unknown response '%s'" %(metadata['respfirstline']))
-            self._nomoretoscan = True
-                         
+            self._failed = True
+
     def execute(self, targetip, targetport, extension, dictionary):
         self._targetip = targetip
         self._targetport = targetport
@@ -136,12 +143,18 @@ class SipCracker(SipLet):
         self._digestalgorithm = None
         self._scaniter = fileLineIterator(dictionary)
         self._targetisproxy = False
+        self._testpktgenerated = False
+        self._targetisalive = False
         self._reusenonce = False
         self._passwordcracked = False
+        self._failed = False
+        self._notfound = False
         self._challenges = list()
         self._testreqsent = False
         self.mainLoop()
-        if not self._passwordcracked:
+        if not self._targetisalive:
+            self.logWarning("No server response")
+        elif not (self._notfound or self._passwordcracked):
             self.logInfo("could'nt crack password for '%s" %(self._username))
 
 

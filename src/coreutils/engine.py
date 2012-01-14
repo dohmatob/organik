@@ -8,6 +8,8 @@ import signal
 import time
 from core import targets
 
+__author__ = 'dohmatob E. dopgima'
+
 def pretty_time():
     """
     Returns current time in the form 15:57:00-Thu-3-Nov-2011
@@ -24,14 +26,12 @@ class PluginCallback:
     """
     def __init__(self, 
                  plugin_name,
-                 target,
                  logfile=None, 
                  announceNewTarget_method=None, 
                  reportVuln_method=None, 
                  reportInfo_method=None,
                  debug=True):
         self._plugin_name = plugin_name
-        self._target = target
         self._logfile = logfile
         self._announceNewTarget_method = announceNewTarget_method
         self._reportVuln_method = reportVuln_method
@@ -42,7 +42,7 @@ class PluginCallback:
         """
         /!\ Should never be invoked directly !!!
         """
-        formatted_msg = '%s [%s] (%s) %s' %(pretty_time(),self._plugin_name,self._target.__str__(),msg)
+        formatted_msg = '%s [%s] %s' %(pretty_time(),self._plugin_name,msg)
         print formatted_msg
         if self._logfile:
             try:
@@ -164,17 +164,20 @@ class Kernel:
         """
         try:
             self.logDebug("loadin: %s" %(plugin_name))
-            self._plugins[plugin_name] = __import__(plugin_name)
+            plugin = __import__(plugin_name)
+            # check whether plugin implements API
             for method in self._PLUGIN_API_METHODS:
-                if not method in self._plugins[plugin_name].__dict__:
+                if not method in plugin.__dict__:
                     self.logDebug("%s doesn't implement method '%s' of the PLUGIN API; plugin will not be loaded" %(plugin_name,method))
-                    del self._plugins[plugin_name]
-                    break
+                    return
         except:
             self.logDebug("caught exception while loading %s (see traceback below)\n%s" %(plugin_name,traceback.format_exc()))
-        self._plugins[plugin_name].ROOTDIR = self._rootdir
+            return
+        # load plugin into kernel
+        plugin.ROOTDIR = self._rootdir
+        self._plugins[plugin_name] = plugin
 
-    def loadPlugins(self, plugin_dir, plugin_regexp='plugin_*.py', donotload=list()):
+    def loadPlugins(self, plugin_dir, plugin_wildcat='plugin_*.py', donotload=list()):
         """
         Loads all plugins from specified directory, all except an option list of plugins
         """
@@ -183,7 +186,7 @@ class Kernel:
             return
         plugin_dir = os.path.abspath(plugin_dir)
         self.logDebug("plugin directory: %s" %(plugin_dir))
-        plugins_to_load = [os.path.basename(item).replace('.py', '') for item in glob.glob(plugin_dir + '/' + plugin_regexp) if not os.path.basename(item) in donotload]
+        plugins_to_load = [os.path.basename(item).replace('.py', '') for item in glob.glob('%s/%s' %(plugin_dir,plugin_wildcat)) if not os.path.basename(item) in donotload]
         self.logDebug('plugins to load: %s' %(len(plugins_to_load)))
         sys.path.append(plugin_dir)
         map(lambda plugin_name: self.loadPlugin(plugin_name), plugins_to_load)
@@ -194,7 +197,6 @@ class Kernel:
         Runs named plugin on target
         """
         pcallback = PluginCallback(plugin_name,
-                                   target,
                                    logfile=self._logfile,
                                    announceNewTarget_method=self.announceNewTarget,
                                    reportVuln_method=self.reportVuln,
@@ -247,7 +249,11 @@ class Kernel:
         self.addTarget(target)
         for plugin_name in self._plugins:
             if self._plugins[plugin_name].targetrule(target):
-                self._task_queue.put((plugin_name, target))
+                newtask = (plugin_name,target)
+                self.scheduleNewTask(newtask)
+                
+    def scheduleNewTask(self, newtask):
+        self._task_queue.put(newtask)
 
     def signalHandler(self, signum, frame):
         """

@@ -55,7 +55,15 @@ class TARGET_TCP_PORT(TARGET):
     """
     _category = "TARGET_TCP_PORT"
     _params = list(["ip", "port"])
-    
+
+
+class TARGET_TCP_CONNECTION(TARGET):
+    """
+    Encapsulates a target tcp connection between two peers
+    """
+    _category = 'TARGET_TCP_CONNECTION'
+    _params = ['ipA', 'portA',' ipB', 'portB']
+
 
 class TARGET_SNMP_SERVICE(TARGET):
     """

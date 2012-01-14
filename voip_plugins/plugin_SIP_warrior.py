@@ -24,7 +24,7 @@ def targetrule(target):
 
 
 class SipWarrior(SipLet):    
-    def callback(self, srcaddr, pkt):
+    def pktCallback(self, srcaddr, pkt):
         """
         Food is served
         """
@@ -37,6 +37,7 @@ class SipWarrior(SipLet):
             Perform a test 1st .. to find out what error code is returned for unknown users
             Quit if weird codes are returned (the SIP UAS must be sick or somethx \L/)
             """
+            self._targetisalive = True
             if metadata['code'] == TRYING \
                     or metadata['code'] == RINGING \
                     or metadata['code'] == UNAVAILABLE:
@@ -44,15 +45,21 @@ class SipWarrior(SipLet):
             elif metadata['code'] == NOTALLOWED \
                     or metadata['code'] == NOTIMPLEMENTED \
                     or metadata['code'] == INEXISTENTTRANSACTION \
+                    or metadata['code'] == NOTACCEPTABLE \
                     or metadata['code'] == BADREQUEST: # yes, protocol imcopatibility is fatal !
                 self.logWarning("received fatal failure response '%s'" %(metadata['respfirstline']))
-                self._noneedtocontinue = True
+                try:
+                    self._currentmethod = self._methods.pop()
+                    self._testpktgenerated = False
+                except IndexError:
+                    self.logWarning("all test pkts failed")
+                    self._failed = True
             elif metadata['code'] == PROXYAUTHREQ \
                     or metadata['code'] == INVALIDPASS \
                     or metadata['code'] == AUTHREQ \
                     or metadata['code'] == TEMPORARILYUNAVAILABLE:
                 self.logWarning("SIP server replied with an authentication request '%s' for an random extension; there can't be any hope!" %(metadata['respfirstline']))
-                self._noneedtocontinue = True
+                self._failed = True
             else:
                 self._BADUSERCODE = metadata['code']
                 self.logDebug("BADUSERCODE = %s" % self._BADUSERCODE)
@@ -74,7 +81,7 @@ class SipWarrior(SipLet):
                 ackpkt = makeRequest('ACK',
                                      srcaddr[0],
                                      srcaddr[1],
-                                     self._externalip,
+                                     self._xternalip,
                                      self._localport,
                                      toaddr,
                                      fromaddr,
@@ -83,7 +90,7 @@ class SipWarrior(SipLet):
                                      callid=metadata['headers']['Call-ID'],
                                      cseqnum=cseqnum)
                 self.logDebug("sending ACK:\n%s" %ackpkt)
-                self.sendto(ackpkt, srcaddr)
+                self._sock.sendto(ackpkt, srcaddr)
             if metadata['code'] == OKAY \
                     or metadata['code'] == AUTHREQ \
                     or metadata['code'] == PROXYAUTHREQ \
@@ -93,7 +100,7 @@ class SipWarrior(SipLet):
                 authentication = 'reqauth'
                 if metadata['code'] == OKAY:
                     authentication = 'noauth'
-                self.logInfo("cracked username: %s (SIP response to '%s' request was '%s')" %(username,self._method,metadata['respfirstline']))
+                self.logInfo("cracked username: %s (SIP response to '%s' request was '%s')" %(username,self._currentmethod,metadata['respfirstline']))
                 if self._pcallback:
                     self._pcallback.announceNewTarget(targets.TARGET_SIP_USER(ip=srcaddr[0], 
                                                                               port=srcaddr[1],
@@ -106,23 +113,31 @@ class SipWarrior(SipLet):
             self.logInfo("received failure response '%s' for username '%s'" %(metadata['respfirstline'], username))
             pass
 
-    def genNewRequest(self):
+    def mustDie(self):
+        return self._failed
+
+    def mayGenerateNextRequest(self):
+        if not self._testpktgenerated:
+            return True
+        else:
+            return self._targetisalive
+
+    def genNextRequest(self):
         """
         Generate next request to fire on target SIP UAS
         """
-        if not self._testreqsent:
-            self._testreqsent = True
+        if not self._testpktgenerated:
+            self.logDebug("generating '%s' test .." %self._currentmethod)
+            self._testpktgenerated = True
             nextusername = random.getrandbits(9)
         else:
             nextusername = self.getNextScanItem()
-            if nextusername is None:
-                return
         toaddr = fromaddr = '"%s"<sip:%s@%s>' %(nextusername,nextusername,self._targetip)
         contact = 'sip:%s@%s' %(nextusername,self._targetip)
-        reqpkt = makeRequest(self._method,
+        reqpkt = makeRequest(self._currentmethod,
                              self._targetip,
                              self._targetport,
-                             self._externalip, 
+                             self._xternalip, 
                              self._localport,
                              toaddr,
                              fromaddr,
@@ -130,23 +145,27 @@ class SipWarrior(SipLet):
                              extension=nextusername)
         return (self._targetip,self._targetport), reqpkt        
 
-    def execute(self, targethost, targetport, dictionary, method="REGISTER", ackenabled=True):
-        self._method = method
+    def execute(self, targethost, targetport, dictionary, methods=["PING", "REGISTER"], ackenabled=True):
+        self._methods = methods
+        self._currentmethod = self._methods.pop()
         self._targetip = socket.gethostbyname(targethost)
         self._targetport = targetport
+        self._testpktgenerated = False
+        self._targetisalive = False
         self._ackenabled = ackenabled
-        self._testreqsent = False
         self._BADUSERCODE = None
-        self._doneusernames = list()
+        self._doneusernames = []
+        self._failed = False
         try:
             self._scaniter = fileLineIterator(open(dictionary, 'r'))
         except:
             self.logDebug("caught exception while opening dictionary '%s' (see traceback below):\n%s" %(dictionary,traceback.format_exc()))
             return        
         self.mainLoop()
-        if self._doneusernames:
+        if not self._targetisalive:
+            self.logWarning("No server response")
+        elif self._doneusernames:
             self.logInfo('cracked usernames: %s' %(', '.join(self._doneusernames))) # XXX reportVuln here !!!
-
         
 def run(target, pcallback):
     sipwarrior = SipWarrior(pcallback=pcallback)
@@ -173,12 +192,12 @@ if __name__ == '__main__':
                         default=None,
                         help="""specify dictionary file of SIP usernames to use""",
                         )
-    parser.add_argument('--method', '-m',
+    parser.add_argument('--methods', '-m',
                         action='store',
-                        dest='method',
-                        default='REGISTER',
-                        help="""specify request method to use (default is REGISTER)""",
+                        dest='methods',
+                        default="PING",
+                        help="""specify request method to use (default are PING)""",
                         )
     options = parser.parse_args()
     sip = SipWarrior()
-    sip.execute(options.target, int(options.port), options.dictionary, method=options.method)
+    sip.execute(options.target, int(options.port), options.dictionary, methods=options.methods.split(","))

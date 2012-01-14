@@ -18,10 +18,10 @@ if __name__ == '__main__':
     os.chdir(old_cwd)
     parser = ArgumentParser(version="w0rkz 0f d0hm4t06 3. d0p91m4")
     parser.add_argument("--target",
-                        action="append",
+                        action="store",
                         dest="target",
-                        default=list(),
-                        help="""specify target to scan"""
+                        default="",
+                        help="""specify target to scan (you may specify a comma-seperated list of targets like localhost,scanme.org,www.microsoft.com)"""
                         )
     parser.add_argument("--nbworkers",
                         dest="nbworkers",
@@ -41,10 +41,10 @@ if __name__ == '__main__':
                         help="""turn off debug mode""",
                       )
     parser.add_argument("--donotload",
-                        action="append",
+                        action="store",
                         dest="donotload",
-                        default=list(),
-                        help="""specify plugin to ignore""",
+                        default="",
+                        help="""specify plugin to ignore (you may specify a comma-seperated list of plugins like plugin_1.py, plugin_ORC.py,plugin_HELL.py)""",
                         ) 
     parser.add_argument("--timeout",
                         dest="timeout",
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     timestamp = '-'.join(list([timestamp[2],timestamp[1],timestamp[4]]))
     logfile = "%s/var/log/scanner-%s-%s.log" %(rootdir,timestamp,os.getpid())
     k = engine.Kernel(logfile=logfile, debug=(not options.quiet), rootdir=rootdir)
-    target_profile = targets.TARGET_IPRANGE(iprange=options.target)
+    target_profile = targets.TARGET_IPRANGE(iprange=options.target.split(","))
     k.bootstrap(target_profile, 
                 '%s/%s' %(rootdir,options.plugindir), 
                 options.donotload, 

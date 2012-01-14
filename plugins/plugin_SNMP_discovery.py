@@ -71,6 +71,9 @@ class SnmpProbe:
         if sysdescr:
             self._discoveries.append((target_ip,version,))
             if self._pcallback:
+                version = '%s' %version
+                if version == '2':
+                    version = '2c'
                 self._pcallback.announceNewTarget(targets.TARGET_SNMP_SERVICE(ip=target_ip, 
                                                                      port=161, # XXX other UDP ports ?
                                                                      version=version,
