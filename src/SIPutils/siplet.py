@@ -49,7 +49,7 @@ class SipLet:
                 self._sock.bind(('', self._localport))
                 break
             except socket.error:
-                self.logWarning("couldn't bind local address: %s:%s" %(self._bindingip, self._localport))
+                self.logWarning("couldn't bind to local address: %s:%s" %(self._bindingip, self._localport))
                 self._localport += 1
         assert self._localport < 65535, "couldn't bind to any any local address" 
         self._bound = True
@@ -69,7 +69,7 @@ class SipLet:
         match = SIP_PKT_PATTERNS['reqfirstline'].search(pkt)
         if match is not None:
             if srcaddr == (self._xternalip,self._localport):
-                self.logDebug("recv'd our won pkt ..")
+                self.logDebug("recv'd our own pkt ..")
             else:
                 self.logDebug("recv'd SIP request '%s' from %s:%s" %(match.group(),srcaddr[0],srcaddr[1]))
             return 
