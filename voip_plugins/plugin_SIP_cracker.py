@@ -50,9 +50,9 @@ class SipCracker(SipLet):
             localtag = None
             cseqnum = 1
             if len(self._challenges) > 0:
-                nextpasswd = self.getNextScanItem()
+                nextpasswd = self._scaniter.next()
                 self.logDebug('trying password: %s' %nextpasswd)
-                localtag = createTag('%s:%s' %(self._username,nextpasswd), '\xDEADBEEF') # self.createTag(nextpasswd)
+                localtag = createTag('%s:%s' %(self._username,nextpasswd), '\xDE\xAD\xBE\xEF')
                 auth = dict()
                 auth['username'] = self._username
                 auth['realm'] = self._realm

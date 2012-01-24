@@ -131,7 +131,7 @@ class SipWarrior(SipLet):
             self._testpktgenerated = True
             nextusername = random.getrandbits(9)
         else:
-            nextusername = self.getNextScanItem()
+            nextusername = self._scaniter.next()
         toaddr = fromaddr = '"%s"<sip:%s@%s>' %(nextusername,nextusername,self._targetip)
         contact = 'sip:%s@%s' %(nextusername,self._targetip)
         reqpkt = makeRequest(self._currentmethod,

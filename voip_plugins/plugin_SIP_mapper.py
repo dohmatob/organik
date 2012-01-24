@@ -30,7 +30,7 @@ class SipMapper(SipLet):
                 self._pcallback.announceNewTarget(targets.TARGET_IP(ip=srcaddr[0],))
         
     def genNextRequest(self):
-        ip, port, method = self.getNextScanItem()
+        ip, port, method = self._scaniter.next()
         toaddr = fromaddr = '"jack" <100@%s>' %(ip)
         reqpkt = makeRequest(method,
                              ip,

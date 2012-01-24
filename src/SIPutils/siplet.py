@@ -1,10 +1,33 @@
 from SIPutils.packet import makeRequest, parsePkt, SIP_PKT_PATTERNS
-# from SIPutils.helper import getRange as getPortRange, ip4range, scanlist as getTargets
 import socket
 import sys
 import select
 
 class SipLet:
+    """
+    Abstract class: implements a fundamental UA for a SIP scanner. 
+    Concrete scanners 
+            - MUST implement the following methods:
+              - self.genNextRequest(), which yields  pair ((dst_ip,dst_port),pkt), of remote address and payload pkt.
+              - self.pktCallback((src_ip,src_port),pkt), a callback which is invoked by the self.getResponse() 
+                method to process an incoming response packet
+                
+            - MAY (optionally) override the following methods:
+              - mustDie(), which should return true iff the present scan must end. For example, for a password cracker, 
+                this method should return true in any of the following cases:
+                - the sought-for password has been cracked 
+                - the (target) extension does not exist
+                - the REGISTRAR has answered with an unknown response
+                - etc.
+              - mayGenerateNextRequest(), which should returns true iff we may generate the next request yet. Typically, 
+                this method should return false if a we haven't yet placed a verdict on a test packet or the target is down
+
+            N.B.:- The above methods can't be generic as they strongly depend on the kind of business the specific 
+                   scanner is into (UAS discovery, extension enumeration, credentials cracking, etc.)
+
+            Examples of concrete scanners: see the plugin_SIP_mapper/warrior/cracker plugins
+
+    """
     def __init__(self, 
                  sockettimeout=3,
                  selecttimeout=0.03,
@@ -42,6 +65,9 @@ class SipLet:
             print '-WARNING- %s' %msg
 
     def bind(self):
+        """
+        Sets local end-point
+        """
         if self._bound:
             return
         while self._localport < 65535:
@@ -61,45 +87,56 @@ class SipLet:
                 self._xternalip = '127.0.0.1'
         self.logDebug("using xternal ip: %s" %(self._xternalip))
         
-    def getNextScanItem(self):
-        return self._scaniter.next()
-
     def getResponse(self):
         pkt, srcaddr = self._sock.recvfrom(8192)
-        match = SIP_PKT_PATTERNS['reqfirstline'].search(pkt)
-        if match is not None:
-            if srcaddr == (self._xternalip,self._localport):
+        match = SIP_PKT_PATTERNS['reqfirstline'].search(pkt) # scrape first line of pkt
+        if match is not None: # strange; somebody is requesting from us !
+            if srcaddr == (self._xternalip,self._localport): # we sent this, didn't we ?
                 self.logDebug("recv'd our own pkt ..")
-            else:
+            else: # strange !
                 self.logDebug("recv'd SIP request '%s' from %s:%s" %(match.group(),srcaddr[0],srcaddr[1]))
             return 
-        self.pktCallback(srcaddr, pkt)
+        self.pktCallback(srcaddr, pkt) # invoke appropriate handle
 
     def mustDie(self):
-        return False
+        """
+        End this scan immediately!?
+        """
+        return False # by default, nothx is redhibitory!
 
     def mayGenerateNextRequest(self):
-        return True
+        """
+        Generate next request alread?
+        """
+        return True # by default, generate pkts as opportunity presents
 
     def mainLoop(self):
-        self.bind()
+        """
+        Main siplet logic be implemented here
+        """
+        self.bind() # set local end-point
         while True:
             if self.mustDie():
-                break
+                break 
             try:
-                r, w, x = select.select([self._sock], [], [], self._selecttimeout)
-                if r:
+                r, w, x = select.select([self._sock], # readfds
+                                        [], # writefds
+                                        [], # exceptfds
+                                        self._selecttimeout,
+                                        )
+                if r: # we got stuff to read
                     if self.mustDie():
-                        break
+                        break 
                     try:
                         self.getResponse()
                     except socket.timeout:
                         continue
-                else:
+                else: # tell'em!
                     if self.mustDie():
                         break
-                    if self._nomoretoscan or not self.mayGenerateNextRequest():
+                    if self._nomoretoscan or not self.mayGenerateNextRequest(): # pack your backs!
                         self.logDebug("making sure no pkts are lost ..")
+                        # UDP is asynchronous; there may be delaied pkts, etc.
                         try:
                             while True:
                                 if self.mustDie():
@@ -112,8 +149,8 @@ class SipLet:
                             dstaddr, reqpkt = self.genNextRequest()
                         except StopIteration:
                             self._nomoretoscan = True
-                            continue
-                        self._sock.sendto(reqpkt, dstaddr)
+                            continue 
+                        self._sock.sendto(reqpkt, dstaddr) # send pkt to remote end-point
             except select.error:
                 break
             except KeyboardInterrupt:
