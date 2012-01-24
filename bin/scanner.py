@@ -52,14 +52,27 @@ if __name__ == '__main__':
                         default=defaulttimeout,
                         help="""specify overall timeout"""
                       )
+    parser.add_argument("--logfile",
+                        dest="logfile",
+                        type=str,
+                        default=None,
+                        help="""specify to which console-output will be duplicated"""
+                      )
     options = parser.parse_args()
+    logfile = None
+    if not options.logfile is None:
+        if os.path.isfile(options.logfile):
+            logfile = options.logfile
+        else:
+            print "%s is not a file." %options.logfile; sys.exit(1)
     os.chdir(_tmp)
-    os.system("mkdir -p %s/var/log" %(rootdir))
-    timestamp = time.ctime().split(' ')
-    if '' in timestamp:
-        timestamp.remove('')
-    timestamp = '-'.join(list([timestamp[2],timestamp[1],timestamp[4]]))
-    logfile = "%s/var/log/scanner-%s-%s.log" %(rootdir,timestamp,os.getpid())
+    if logfile is None:
+        os.system("mkdir -p %s/var/log" %(rootdir))
+        timestamp = time.ctime().split(' ')
+        if '' in timestamp:
+            timestamp.remove('')
+        timestamp = '-'.join([timestamp[2],timestamp[1],timestamp[4]])
+        logfile = "%s/var/log/scanner-%s-%s.log" %(rootdir,timestamp,os.getpid())
     k = engine.Kernel(logfile=logfile, debug=(not options.quiet), rootdir=rootdir)
     target_profile = targets.TARGET_IPRANGE(iprange=options.target.split(","))
     k.bootstrap(target_profile, 

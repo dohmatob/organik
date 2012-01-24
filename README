@@ -8,99 +8,14 @@
 Event-driven organic spider-like scanner for mobile telephony & telco
 infrastructure
 
-Example usage: elvis@elvis-pc:~/organik$ ./bin/scanner.py --target localhost --plugindir voip_plugins/ --nbworkers 64
+============
+INSTALLATION
+============
+make install
 
-[log follow ..]
+=====
+USAGE
+=====
 
-19:16:38-Mon-23-Jan-2012 [kernel] -DEBUG- bootstrapped
-19:16:38-Mon-23-Jan-2012 [kernel] -DEBUG- pid: 7669
-19:16:38-Mon-23-Jan-2012 [kernel] -DEBUG- root dir: /home/elvis/organik
-19:16:38-Mon-23-Jan-2012 [kernel] -DEBUG- logfile: /home/elvis/organik/var/log/scanner-23-Jan-2012-7669.log
-19:16:38-Mon-23-Jan-2012 [kernel] -DEBUG- plugin directory: /home/elvis/organik/voip_plugins
-19:16:38-Mon-23-Jan-2012 [kernel] -DEBUG- plugins to load: 3
-19:16:38-Mon-23-Jan-2012 [kernel] -DEBUG- loadin: plugin_SIP_cracker
-19:16:38-Mon-23-Jan-2012 [kernel] -DEBUG- loadin: plugin_SIP_warrior
-19:16:38-Mon-23-Jan-2012 [kernel] -DEBUG- loadin: plugin_SIP_mapper
-19:16:39-Mon-23-Jan-2012 [kernel] -DEBUG- loaded: 3 plugins out of 3
-19:16:39-Mon-23-Jan-2012 [kernel] -DEBUG- setting trap for SIGINT
-19:16:39-Mon-23-Jan-2012 [kernel] -DEBUG- running plugin_SIP_mapper on TARGET_IPRANGE={'iprange': ['localhost']}
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_mapper] -WARNING- couldn't bind to local address: 0.0.0.0:5060
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_mapper] -DEBUG- bound to local address:0.0.0.0: 5061
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_mapper] -DEBUG- using xternal ip: 127.0.0.1
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_mapper] -DEBUG- recv'd our won pkt ..
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_mapper] -INFO- SIP (UDP) server 'Asterisk PBX 1.6.2.9-2ubuntu2' at 127.0.0.1:5060
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_mapper] -DEBUG- announcing new TARGET_SIP_SERVICE={'useragent': 'Asterisk PBX 1.6.2.9-2ubuntu2', 'port': 5060, 'ip': '127.0.0.1'}
-19:16:39-Mon-23-Jan-2012 [kernel] -DEBUG- running plugin_SIP_warrior on TARGET_SIP_SERVICE={'useragent': 'Asterisk PBX 1.6.2.9-2ubuntu2', 'port': 5060, 'ip': '127.0.0.1'}
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -WARNING- couldn't bind to local address: 0.0.0.0:5060
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -WARNING- couldn't bind to local address: 0.0.0.0:5061
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -DEBUG- bound to local address:0.0.0.0: 5062
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -DEBUG- using xternal ip: 127.0.0.1
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -DEBUG- generating 'REGISTER' test ..
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -DEBUG- BADUSERCODE = 404
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'toor'
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'superman'
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_mapper] -DEBUG- making sure no pkts are lost ..
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'terminator'
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'ratatouille'
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'billgates'
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'root'
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'sip'
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'SIP'
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username '200'
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username '500'
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'jack'
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'obama'
-19:16:39-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'binladen'
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username '100'
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username '102'
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'jill'
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'jackjilljack'
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'jAckjilljack'
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username '1000'
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username '112'
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username '103'
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'wElcome'
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username '104'
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'welcome'
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- cracked username: 101 (SIP response to 'REGISTER' request was 'SIP/2.0 401 Unauthorized')
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_warrior] -DEBUG- announcing new TARGET_SIP_USER={'username': '101', 'useragent': 'Asterisk PBX 1.6.2.9-2ubuntu2', 'authentication': 'reqauth', 'port': 5060, 'ip': '127.0.0.1'}
-19:16:40-Mon-23-Jan-2012 [kernel] -DEBUG- running plugin_SIP_cracker on TARGET_SIP_USER={'username': '101', 'useragent': 'Asterisk PBX 1.6.2.9-2ubuntu2', 'authentication': 'reqauth', 'port': 5060, 'ip': '127.0.0.1'}
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_cracker] -WARNING- couldn't bind to local address: 0.0.0.0:5060
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_cracker] -WARNING- couldn't bind to local address: 0.0.0.0:5061
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_cracker] -WARNING- couldn't bind to local address: 0.0.0.0:5062
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- bound to local address:0.0.0.0: 5063
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- using xternal ip: 127.0.0.1
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- sending test request
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- received failure response 'SIP/2.0 404 Not found' for username 'pingtel'
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: toor
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_warrior] -DEBUG- making sure no pkts are lost ..
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: superman
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: terminator
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: ratatouille
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: billgates
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: root
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: sip
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: SIP
-19:16:40-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: 200
-19:16:41-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: 500
-19:16:41-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: jack
-19:16:41-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: obama
-19:16:41-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: binladen
-19:16:41-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: 100
-19:16:41-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: 102
-19:16:41-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: jill
-19:16:41-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: jackjilljack
-19:16:41-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: jAckjilljack
-19:16:41-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: 1000
-19:16:41-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: 112
-19:16:41-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: 103
-19:16:41-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: wElcome
-19:16:41-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: 104
-19:16:41-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- trying password: welcome
-19:16:42-Mon-23-Jan-2012 [plugin_SIP_cracker] -DEBUG- 'SIP/2.0 200 OK' response received
-19:16:42-Mon-23-Jan-2012 [plugin_SIP_cracker] -INFO- the password for user/extension '101' is 'welcome'
-19:16:42-Mon-23-Jan-2012 [kernel] -DEBUG- done running plugin_SIP_cracker on TARGET_SIP_USER={'username': '101', 'useragent': 'Asterisk PBX 1.6.2.9-2ubuntu2', 'authentication': 'reqauth', 'port': 5060, 'ip': '127.0.0.1'}
-19:16:42-Mon-23-Jan-2012 [kernel] -DEBUG- done running plugin_SIP_mapper on TARGET_IPRANGE={'iprange': ['localhost']}
-19:16:43-Mon-23-Jan-2012 [plugin_SIP_warrior] -INFO- cracked usernames: 101
-19:16:43-Mon-23-Jan-2012 [kernel] -DEBUG- done running plugin_SIP_warrior on TARGET_SIP_SERVICE={'useragent': 'Asterisk PBX 1.6.2.9-2ubuntu2', 'port': 5060, 'ip': '127.0.0.1'}
-19:16:43-Mon-23-Jan-2012 [kernel] -DEBUG- terminating
+example1:
+elvis@elvis-pc:~/organik$ ./bin/scanner.py --target localhost --plugindir voip_plugins/ --nbworkers 64

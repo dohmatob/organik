@@ -168,14 +168,15 @@ class Kernel:
             # check whether plugin implements API
             for method in self._PLUGIN_API_METHODS:
                 if not method in plugin.__dict__:
-                    self.logDebug("%s doesn't implement method '%s' of the PLUGIN API; plugin will not be loaded" %(plugin_name,method))
+                    self.logWarning("%s doesn't implement method '%s' of the PLUGIN API; plugin will not be loaded." %(plugin_name,method))
                     return
         except:
-            self.logDebug("caught exception while loading %s (see traceback below)\n%s" %(plugin_name,traceback.format_exc()))
+            self.logDebug("caught exception while loading %s (see traceback below).\n%s" %(plugin_name,traceback.format_exc()))
             return
         # load plugin into kernel
         plugin.ROOTDIR = self._rootdir
         self._plugins[plugin_name] = plugin
+        self.logDebug("ok")
 
     def loadPlugins(self, plugin_dir, plugin_wildcat='plugin_*.py', donotload=list()):
         """
@@ -187,7 +188,7 @@ class Kernel:
         plugin_dir = os.path.abspath(plugin_dir)
         self.logDebug("plugin directory: %s" %(plugin_dir))
         plugins_to_load = [os.path.basename(item).replace('.py', '') for item in glob.glob('%s/%s' %(plugin_dir,plugin_wildcat)) if not os.path.basename(item) in donotload]
-        self.logDebug('plugins to load: %s' %(len(plugins_to_load)))
+        self.logDebug('plugins to load : %s' %(len(plugins_to_load)))
         sys.path.append(plugin_dir)
         map(lambda plugin_name: self.loadPlugin(plugin_name), plugins_to_load)
         self.logDebug('loaded: %s plugins out of %s' %(len(self._plugins),len(plugins_to_load)))
@@ -316,9 +317,10 @@ class Kernel:
         if not self._debug:
             self.logInfo("entering silent mode; no debug output will be produced")
         self.logDebug("bootstrapped")
-        self.logDebug("pid: %s" %(self._pid))
-        self.logDebug("root dir: %s" %(self._rootdir))
-        self.logDebug("logfile: %s" %(os.path.abspath(self._logfile)))
+        self.logDebug("principal pid    : %d"%self._pid)
+        self.logDebug("number of workers: %d"%nbworkers)
+        self.logDebug("root dir         : %s" %self._rootdir)
+        self.logDebug("logfile          : %s" %os.path.abspath(self._logfile))
         self.loadPlugins(plugin_dir, donotload=donotload)
         self.logDebug("setting trap for SIGINT")
         signal.signal(signal.SIGINT, self.signalHandler)
