@@ -5,7 +5,7 @@ import unittest
 import random
 import md5
 from response_codes import *
-from libsip.helper import challengeResponse as getChallengeResponse
+from helper import challengeResponse as getChallengeResponse
 
 __author__ = 'd0hm4t06 3. d0p91m4'
 

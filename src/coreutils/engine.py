@@ -6,7 +6,6 @@ import glob
 import traceback
 import signal
 import time
-from core import targets
 
 __author__ = 'dohmatob E. dopgima'
 
