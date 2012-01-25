@@ -10,7 +10,7 @@ from SIPutils.iterators import fileLineIterator
 from SIPutils.response_codes import *
 from coreutils import targets
 
-AUTHOR="""d0hm4t06 3. d0p91m4"""
+AUTHOR="""d0hm4t06 3. d0p91m4 (h4lf-jiffie)"""
 AUTHOR_EMAIL="""gmdopp@gmail.com"""
 DESCRIPTION="""Plugin to enumerate remote SIP usernames/extensions"""
 
