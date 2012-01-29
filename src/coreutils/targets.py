@@ -24,7 +24,10 @@ class TARGET:
             return None
 
     def __str__(self):
-        return "%s=%s" %(self._category, self._content)
+        raw = "%s("%self._category
+        for key, item in self._content.iteritems():
+            raw += "%s=%s, "%(key,item)
+        return raw.rstrip(", ") + ")"
 
     def getCategory(self):
         return self._category
