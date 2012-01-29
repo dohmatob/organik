@@ -117,7 +117,7 @@ class SipCracker(SipLet):
             match = re.search('tag=([+\.;:a-zA-Z0-9]*)',metadata['headers']['From'])
             assert not match is None, "No 'From' tag: Remote SIP UAC 'ate' our tag!"
             tag = match.group(1)
-            creds = decodeTag(tag, '\xDEADBEEF').split(':')
+            creds = decodeTag(tag, '\xDE\xAD\xBE\xEF').split(':')
             assert (not creds is None) and 0 < len(creds) < 3, "couln't not decode to tag: %s" %(tag)
             self.logDebug("'%s' response received" %(metadata['respfirstline']))
             if len(creds) > 1:

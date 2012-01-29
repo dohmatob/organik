@@ -8,16 +8,17 @@ import signal
 import time
 from core import targets
 
-__author__ = 'dohmatob E. dopgima'
+__author__ = 'dohmatob elvis dopgima'
+__author_email = 'gmdopp@gmail.com'
 
 def pretty_time():
     """
-    Returns current time in the form 15:57:00-Thu-3-Nov-2011
+    Returns current time in the form 16:35:29
     """
     t = time.ctime().split(' ')
     if '' in t:
         t.remove('')
-    return '-'.join([t[3],t[0],t[2],t[1],t[4]])
+    return t[3]
 
 
 class PluginCallback:
@@ -42,7 +43,7 @@ class PluginCallback:
         """
         /!\ Should never be invoked directly !!!
         """
-        formatted_msg = '%s [%s] %s' %(pretty_time(),self._plugin_name,msg)
+        formatted_msg = '%s %s> %s' %(pretty_time(),self._plugin_name,msg)
         print formatted_msg
         if self._logfile:
             try:
@@ -134,7 +135,7 @@ class Kernel:
                 self.logWarning("couldn't open logfile %s for reading (see traceback below); loggin will be disabled\n%s" %(logfile,traceback.format_exc()))
 
     def log(self, msg):
-        formatted_msg = '%s [kernel] %s' %(pretty_time(),msg)
+        formatted_msg = '%s kernel> %s' %(pretty_time(),msg)
         print formatted_msg
         if self._logfile:
             try:
