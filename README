@@ -2,9 +2,6 @@
 + 0r94n1K +
 +++++++++++
 
-(c) h4lf-jiffie (dohmatob elvis dopgima)
-
-
 Event-driven organic spider-like auditor for mobile telephony & telco infrastructure
 
 ============
@@ -16,5 +13,43 @@ make install
 USAGE
 =====
 
-example1:
-elvis@elvis-pc:~/organik$ ./bin/scanner.py --target localhost --plugindir voip_plugins/ --nbworkers 64
+example1
+
+dop@hell:~/CODE/organik$ python bin/scanner.py --nbworkers 64 --target hell --plugindir voip_plugins/
+14:37:11 kernel> -DEBUG- bootstrapped
+14:37:11 kernel> -DEBUG- principal pid    : 14407
+14:37:11 kernel> -DEBUG- number of workers: 64
+14:37:11 kernel> -DEBUG- root dir         : /home/dop/CODE/organik
+14:37:11 kernel> -DEBUG- logfile          : /home/dop/CODE/organik/var/log/scanner-2-Apr-2012-14407.log
+14:37:11 kernel> -DEBUG- plugin directory: /home/dop/CODE/organik/voip_plugins
+14:37:11 kernel> -DEBUG- plugins to load : 3
+14:37:11 kernel> -DEBUG- loadin: plugin_SIP_mapper
+14:37:11 kernel> -DEBUG- ok
+14:37:11 kernel> -DEBUG- loadin: plugin_SIP_cracker
+14:37:11 kernel> -DEBUG- ok
+14:37:11 kernel> -DEBUG- loadin: plugin_SIP_warrior
+14:37:11 kernel> -DEBUG- ok
+14:37:11 kernel> -DEBUG- loaded: 3 plugins out of 3
+14:37:11 kernel> -DEBUG- setting trap for SIGINT
+14:37:11 kernel> -DEBUG- running plugin_SIP_mapper on TARGET_IPRANGE(iprange=['hell'])
+14:37:11 plugin_SIP_mapper> -WARNING- couldn't bind to local address: 0.0.0.0:5060
+14:37:11 plugin_SIP_mapper> -DEBUG- bound to local address:0.0.0.0: 5061
+14:37:11 plugin_SIP_mapper> -DEBUG- using xternal ip: 127.0.0.1
+14:37:12 plugin_SIP_mapper> -INFO- SIP (UDP) server 'Twinkle/1.4.2' at 127.0.0.1:5060
+14:37:12 plugin_SIP_mapper> -DEBUG- announcing new TARGET_SIP_SERVICE(useragent=Twinkle/1.4.2, port=5060, ip=127.0.0.1)
+14:37:12 kernel> -DEBUG- running plugin_SIP_warrior on TARGET_SIP_SERVICE(useragent=Twinkle/1.4.2, port=5060, ip=127.0.0.1)
+14:37:12 plugin_SIP_warrior> -WARNING- couldn't bind to local address: 0.0.0.0:5060
+14:37:12 plugin_SIP_warrior> -WARNING- couldn't bind to local address: 0.0.0.0:5061
+14:37:12 plugin_SIP_warrior> -DEBUG- bound to local address:0.0.0.0: 5062
+14:37:12 plugin_SIP_warrior> -DEBUG- using xternal ip: 127.0.0.1
+14:37:12 plugin_SIP_mapper> -DEBUG- recv'd our own pkt ..
+14:37:12 plugin_SIP_warrior> -DEBUG- generating 'REGISTER' test ..
+14:37:12 plugin_SIP_warrior> -WARNING- SIP server replied with an authentication request 'SIP/2.0 403 Forbidden' for an random extension; there can't be any hope!
+14:37:12 kernel> -DEBUG- done running plugin_SIP_warrior on TARGET_SIP_SERVICE(useragent=Twinkle/1.4.2, port=5060, ip=127.0.0.1)
+14:37:12 plugin_SIP_mapper> -DEBUG- making sure no pkts are lost ..
+14:37:15 kernel> -DEBUG- done running plugin_SIP_mapper on TARGET_IPRANGE(iprange=['hell'])
+14:37:15 kernel> -DEBUG- terminating
+Terminated
+dop@hell:~/CODE/organik$ 
+
+(c) h4lf-jiffie (dohmatob elvis dopgima)
