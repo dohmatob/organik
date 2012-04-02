@@ -18,3 +18,18 @@ USAGE
 
 example1:
 elvis@elvis-pc:~/organik$ ./bin/scanner.py --target localhost --plugindir voip_plugins/ --nbworkers 64
+14:36:42 kernel> -DEBUG- bootstrapped
+14:36:42 kernel> -DEBUG- principal pid    : 14261
+14:36:42 kernel> -DEBUG- number of workers: 64
+14:36:42 kernel> -DEBUG- root dir         : /home/dop/CODE/organik
+14:36:42 kernel> -DEBUG- logfile          : /home/dop/CODE/organik/var/log/scanner-2-Apr-2012-14261.log
+14:36:42 kernel> -DEBUG- plugin directory: /home/dop/CODE/organik/voip_plugins
+14:36:42 kernel> -DEBUG- plugins to load : 3
+14:36:42 kernel> -DEBUG- loadin: plugin_SIP_mapper
+14:36:42 kernel> -DEBUG- ok
+14:36:42 kernel> -DEBUG- loadin: plugin_SIP_cracker
+14:36:42 kernel> -DEBUG- ok
+14:36:42 kernel> -DEBUG- loadin: plugin_SIP_warrior
+14:36:42 kernel> -DEBUG- ok
+14:36:42 kernel> -DEBUG- loaded: 3 plugins out of 3
+14:36:42 kernel> -DEBUG- setting trap for SIGINT
