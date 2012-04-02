@@ -76,20 +76,16 @@ class SipWarrior(SipLet):
                 match = re.search("^(?P<cseqnum>[0-9]+?) .+?", metadata['headers']['CSeq'])
                 assert match is not None # XXX dirty
                 cseqnum = match.group('cseqnum')
-                toaddr = fromaddr = '"%s"<%s@%s>' %(username,username,srcaddr[0])
-                contact = 'sip:%s@%s' %(username,srcaddr[0])
                 ackpkt = makeRequest('ACK',
                                      srcaddr[0],
                                      srcaddr[1],
                                      self._xternalip,
                                      self._localport,
-                                     toaddr,
-                                     fromaddr,
-                                     contact=contact,
                                      extension=username,
                                      callid=metadata['headers']['Call-ID'],
                                      cseqnum=cseqnum)
-                self.logDebug("sending ACK:\n%s" %ackpkt)
+                self.logInfo("received (success) response '%s' for username '%s'" %(metadata['respfirstline'], username))
+                self.logDebug("sending ACK ..")
                 self._sock.sendto(ackpkt, srcaddr)
             if metadata['code'] == OKAY \
                     or metadata['code'] == AUTHREQ \

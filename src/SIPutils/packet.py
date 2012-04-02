@@ -26,10 +26,10 @@ def makeRequest(method,
                 dstport,
                 srchost,
                 srcport,
-                toaddr,
-                fromaddr,
+                toaddr=None,
+                fromaddr=None,
                 maxforwards=70,
-                extension=None,
+                extension="jack",
                 contact=None,
                 callid=None,
                 cseqnum=1,
@@ -38,19 +38,21 @@ def makeRequest(method,
                 content='',
                 accept='application/sdp',
                 useragent='BROKEN-SYSTEMS',
-                auth=None):
+                auth=None,
+                ):
     """
     CRAFT SIP REQUEST PKT
     """
     superheaders = dict()
     headers = dict()
     finalheaders = dict()
-    if extension is None:
-        uri = 'sip:%s' %(dsthost)
-    else:
-        uri = 'sip:%s@%s' %(extension,dsthost)
+    uri = 'sip:%s@%s' %(extension,dsthost)
     superheaders['Via'] = 'SIP/2.0/UDP %s:%s;branch=z9hG4bK-%s;rport' %(srchost,srcport,random.getrandbits(32))
+    if toaddr is None:
+        toaddr = '"%s"<sip:%s@%s>'%(extension,extension,dsthost[0])
     headers['To'] = toaddr
+    if fromaddr is None:
+        fromaddr = '"%s"<sip:%s@%s>'%(extension,extension,dsthost[0])
     headers['From'] = fromaddr
     if localtag is None:
         localtag = random.getrandbits(80)
@@ -60,7 +62,7 @@ def makeRequest(method,
         callid = '%s' %(random.getrandbits(32))
     headers['Call-ID'] = callid
     if contact is None:
-        contact = 'sip:%s:1.1.1.1' %(random.getrandbits(9)) # NO WHERE !
+        contact = '"%s" <sip:%s:1.1.1.1>' %(extension,extension) # XXX points to nowhere !!
     headers['Contact'] = contact
     headers['CSeq'] = '%s %s' %(cseqnum,method)
     headers['Max-Forwards'] = maxforwards
@@ -182,7 +184,7 @@ class TestMakeRequest(unittest.TestCase):
         method = 'OPTIONS'
         srchost = dsthost = '127.0.0.1'
         dstport = srcport = 5060
-        fromaddr = toaddr = '"jack" <sip:100@%s>' %(dsthost)
+        fromaddr = toaddr = '"jack" <sip:jack@%s>' %(dsthost)
         reqpkt = makeRequest(method, dsthost, dstport, srchost, srcport, toaddr, fromaddr)
         print reqpkt
         meta = parsePkt(reqpkt)

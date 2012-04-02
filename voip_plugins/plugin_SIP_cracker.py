@@ -32,8 +32,6 @@ class SipCracker(SipLet):
         """
         Generate next request to fire on target SIP UAS
         """
-        toaddr = fromaddr = '"%s" <sip:%s@%s>' %(self._username,self._username,self._targetip)
-        contact = 'sip:%s@%s' %(self._username,self._targetip)
         if not self._testpktgenerated:
             self._testpktgenerated = True
             self.logDebug('sending test request')
@@ -42,10 +40,9 @@ class SipCracker(SipLet):
                                  self._targetport,  
                                  self._xternalip,
                                  self._localport,
-                                 toaddr,
-                                 fromaddr,
                                  extension=self._username, 
-                                 cseqnum=1)
+                                 cseqnum=1,
+                                 )
         else:
             localtag = None
             cseqnum = 1

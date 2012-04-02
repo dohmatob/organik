@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 from argparse import ArgumentParser
 from SIPutils.packet import makeRequest, parsePkt
@@ -31,29 +32,26 @@ class SipMapper(SipLet):
         
     def genNextRequest(self):
         ip, port, method = self._scaniter.next()
-        toaddr = fromaddr = '"jack" <100@%s>' %(ip)
         reqpkt = makeRequest(method,
                              ip,
                              port,
                              self._xternalip,
                              self._localport,
-                             toaddr,
-                             fromaddr)
+                             )
         return (ip,port), reqpkt
         
-    def execute(self, target, portrange="5060-5070", methods=["OPTIONS"]):
+    def execute(self, target, portrange="5060-5070",):
         """
         Scan
         """
         if type(target) is str:
             target = target.split(',')
-        self._scaniter = getTargetList(ip4range(*target), getPortRange(portrange), methods)
+        self._scaniter = getTargetList(ip4range(*target), getPortRange(portrange), ["OPTIONS",])
         self._donesrcaddrs = []
         self.mainLoop()
         if not self._donesrcaddrs:
             self.logDebug("Nothing found")
-
-        
+  
 def run(target, pcallback):
     sipmapper = SipMapper(pcallback=pcallback)
     sipmapper.execute(target.get('iprange'))
