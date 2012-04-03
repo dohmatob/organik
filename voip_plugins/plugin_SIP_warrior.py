@@ -141,7 +141,7 @@ class SipWarrior(SipLet):
                              extension=nextusername)
         return (self._targetip,self._targetport), reqpkt        
 
-    def execute(self, targethost, targetport, dictionary, methods=["PING", "REGISTER"], ackenabled=True):
+    def execute(self, targethost, targetport, dictionary, methods=["PING","REGISTER","OPTIONS",], ackenabled=True):
         self._methods = methods
         self._currentmethod = self._methods.pop()
         self._targetip = socket.gethostbyname(targethost)
