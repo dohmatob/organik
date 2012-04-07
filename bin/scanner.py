@@ -44,7 +44,7 @@ if __name__ == '__main__':
                         action="store",
                         dest="donotload",
                         default="",
-                        help="""specify plugin to ignore (you may specify a comma-seperated list of plugins like plugin_1.py, plugin_ORC.py,plugin_HELL.py)""",
+                        help="""specify plugin to ignore (you may specify a comma-seperated list of plugins like plugin_1.py,plugin_ORC.py,plugin_HELL.py)""",
                         ) 
     parser.add_argument("--timeout",
                         dest="timeout",
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     target_profile = targets.TARGET_IPRANGE(iprange=options.target.split(","))
     k.bootstrap(target_profile, 
                 '%s/%s' %(rootdir,options.plugindir), 
-                options.donotload, 
+                donotload=options.donotload.split(','), 
                 nbworkers=options.nbworkers, 
                 timeout=options.timeout)
 

@@ -47,7 +47,10 @@ class SipCracker(SipLet):
             localtag = None
             cseqnum = 1
             if len(self._challenges) > 0:
-                nextpasswd = self._scaniter.next()
+                try:
+                    nextpasswd = self._scaniter.next()
+                except StopIteration:
+                    return None
                 self.logDebug('trying password: %s' %nextpasswd)
                 localtag = createTag('%s:%s' %(self._username,nextpasswd), '\xDE\xAD\xBE\xEF')
                 auth = dict()
@@ -78,7 +81,7 @@ class SipCracker(SipLet):
                                  cseqnum=cseqnum,
                                  localtag=localtag,
                                  auth=auth)
-        return ((self._targetip,self._targetport), reqpkt)
+        return (self._targetip,self._targetport), reqpkt
 
     def mayGenerateNextRequest(self):
         if not self._testpktgenerated:

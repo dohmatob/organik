@@ -1,5 +1,6 @@
 import unittest
 import multiprocessing
+import threading
 import os
 import sys
 import glob
@@ -50,7 +51,8 @@ class PluginCallback:
                 fh.write(formatted_msg + '\r\n')
                 fh.close()
             except:
-                self.logWarning("caught exception while writing logfile %s (see traceback below)\n%s" %(self._logfile,traceback.format_exc()))
+                self.logWarning("caught exception while writing logfile %s (see traceback below)\n%s" \
+                                    %(self._logfile,traceback.format_exc()))
 
     def logDebug(self, msg):
         """
@@ -131,7 +133,8 @@ class Kernel:
                 open(logfile, 'w').close()
             except:
                 self._logfile = None
-                self.logWarning("couldn't open logfile %s for reading (see traceback below); loggin will be disabled\n%s" %(logfile,traceback.format_exc()))
+                self.logWarning("couldn't open logfile %s for reading (see traceback below); loggin will be disabled\n%s" \
+                                    %(logfile,traceback.format_exc()))
 
     def log(self, msg):
         formatted_msg = '%s kernel> %s' %(pretty_time(),msg)
@@ -142,7 +145,8 @@ class Kernel:
                 fh.write(formatted_msg + '\r\n')
                 fh.close()
             except:
-                self.logWarning("caught exception while writing logfile %s (see traceback below)\n%s" %(self._logfile,traceback.format_exc()))
+                self.logWarning("caught exception while writing logfile %s (see traceback below)\n%s" \
+                                    %(self._logfile,traceback.format_exc()))
 
     def logDebug(self, msg):
         if not self._debug:
@@ -163,20 +167,22 @@ class Kernel:
         Loads given plugin
         """
         try:
-            self.logDebug("loadin: %s" %(plugin_name))
+            self.logDebug("loadin %s .." %(plugin_name))
             plugin = __import__(plugin_name)
             # check whether plugin implements API
             for method in self._PLUGIN_API_METHODS:
                 if not method in plugin.__dict__:
-                    self.logWarning("%s doesn't implement method '%s' of the PLUGIN API; plugin will not be loaded." %(plugin_name,method))
+                    self.logWarning("%s doesn't implement method '%s' of the PLUGIN API; plugin will not be loaded." \
+                                        %(plugin_name,method))
                     return
         except:
-            self.logDebug("caught exception while loading %s (see traceback below).\n%s" %(plugin_name,traceback.format_exc()))
+            self.logDebug("caught exception while loading %s (see traceback below).\n%s" \
+                              %(plugin_name,traceback.format_exc()))
             return
         # load plugin into kernel
         plugin.ROOTDIR = self._rootdir
         self._plugins[plugin_name] = plugin
-        self.logDebug("ok")
+        self.logDebug("ok.")
 
     def loadPlugins(self, plugin_dir, plugin_wildcat='plugin_*.py', donotload=list()):
         """
@@ -186,12 +192,13 @@ class Kernel:
             self.logWarning("can't access plugin directory '%s' (does directory exist)" %(plugin_dir))
             return
         plugin_dir = os.path.abspath(plugin_dir)
-        self.logDebug("plugin directory: %s" %(plugin_dir))
-        plugins_to_load = [os.path.basename(item).replace('.py', '') for item in glob.glob('%s/%s' %(plugin_dir,plugin_wildcat)) if not os.path.basename(item) in donotload]
-        self.logDebug('plugins to load : %s' %(len(plugins_to_load)))
+        self.logDebug("plugin directory : %s" %(plugin_dir))
+        plugins_to_load = [os.path.basename(item).replace('.py', '') for item in \
+                               glob.glob('%s/%s' %(plugin_dir,plugin_wildcat)) if not os.path.basename(item) in donotload]
+        self.logDebug('plugins to load  : %s' %(len(plugins_to_load)))
         sys.path.append(plugin_dir)
         map(lambda plugin_name: self.loadPlugin(plugin_name), plugins_to_load)
-        self.logDebug('loaded: %s plugins out of %s' %(len(self._plugins),len(plugins_to_load)))
+        self.logDebug('loaded           : %s plugin(s) out of %s' %(len(self._plugins),len(plugins_to_load)))
 
     def runPlugin(self, plugin_name, target):
         """
@@ -209,7 +216,8 @@ class Kernel:
             self._plugins[plugin_name].run(target, pcallback)
             self.logDebug("done running %s on %s" %(plugin_name, target.__str__()))
         except:
-            self.logWarning("caught exception while running %s on %s (see traceback below)\n%s" %(plugin_name, target.__str__(), traceback.format_exc()))
+            self.logWarning("caught exception while running %s on %s (see traceback below)\n%s" \
+                                %(plugin_name, target.__str__(), traceback.format_exc()))
             
     def targetExists(self, target):
         """
@@ -223,10 +231,10 @@ class Kernel:
 
     def addTarget(self, target):
         """
-        Adjoints given target to foregoing profile
+        Adds given target to current profile
         """
         category = target.getCategory()
-        if category in self._target_profile.keys():
+        if category in self._target_profile:
             self._target_profile[category].append(target)
         else:
             self._target_profile[category] = [target]
@@ -281,7 +289,8 @@ class Kernel:
             try:
                 plugin_name, target = self._task_queue.get()
             except:
-                self.logWarning("caught exception while fetching new task (see traceback below)\n%s" %(traceback.format_exc()))
+                self.logWarning("caught exception while fetching new task (see traceback below)\n%s" \
+                                    %(traceback.format_exc()))
                 break
             self.runPlugin(plugin_name, target)
             self._task_queue.task_done()
@@ -292,11 +301,12 @@ class Kernel:
         """
         if not self._task_queue._closed:
             self._task_queue.close()
-        self.logDebug("terminating")
+        self.logDebug("terminating ..")
         try:
             os.kill(0, signum)
         except:
-            self.logDebug("caught exception while sending signum %s to process group (see traceback below)\n%s" %(traceback.format_exc()))
+            self.logDebug("caught exception while sending signum %s to process group (see traceback below)\n%s" \
+                              %(traceback.format_exc()))
             os.kill(0, signal.SIGKILL)
 
     def serve(self, nbworkers):
@@ -310,24 +320,33 @@ class Kernel:
         self._task_queue.join()
         self.finish()
 
-    def bootstrap(self, target_profile, plugin_dir, donotload=list(), nbworkers=multiprocessing.cpu_count()*20, timeout=0):
+    def bootstrap(self, 
+                  target_profile, 
+                  plugin_dir, 
+                  donotload=list(), 
+                  nbworkers=multiprocessing.cpu_count()*20, 
+                  timeout=0,
+                  ):
         """
         Kick-off !
         """
+        print '\r\n\t\t--[ (c) dohmatob elvis dopgima ]--\r\n'
         if not self._debug:
             self.logInfo("entering silent mode; no debug output will be produced")
-        self.logDebug("bootstrapped")
+        self.logDebug("bootstrapped.")
         self.logDebug("principal pid    : %d"%self._pid)
         self.logDebug("number of workers: %d"%nbworkers)
         self.logDebug("root dir         : %s" %self._rootdir)
         self.logDebug("logfile          : %s" %os.path.abspath(self._logfile))
         self.loadPlugins(plugin_dir, donotload=donotload)
-        self.logDebug("setting trap for SIGINT")
+        self.logDebug("setting trap for SIGINT ..")
         signal.signal(signal.SIGINT, self.signalHandler)
+        self.logDebug('ok.')
         if timeout > 0:
-            self.logDebug("setting trap for SIGALRM (timeout=%ss)" %(timeout))
+            self.logDebug("setting trap for SIGALRM (timeout=%ss) .." %(timeout))
             signal.signal(signal.SIGALRM, self.signalHandler)
             signal.alarm(timeout)
+            self.logDebug('ok.')
         self.announceNewTarget(target_profile)
         self.serve(nbworkers)
 

@@ -81,7 +81,7 @@ class TARGET_SIP_SERVICE(TARGET):
     Encapsulates a target SIP service
     """
     _category = "TARGET_SIP_SERVICE"
-    _params = list(["ip", "port", "useragent"])
+    _params = list(["ip", "port", "ua"])
 
 
 class TARGET_SIP_USER(TARGET):
@@ -89,7 +89,7 @@ class TARGET_SIP_USER(TARGET):
     Encapsulates a target SIP user
     """
     _category = "TARGET_SIP_USER"
-    _params = list(["ip", "port", "useragent", "username", "authentication"])
+    _params = list(["ip", "port", "ua", "username", "auth"])
 
 
 class TargetTest(unittest.TestCase):

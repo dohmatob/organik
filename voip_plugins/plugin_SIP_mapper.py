@@ -21,17 +21,24 @@ class SipMapper(SipLet):
         if self.treated(srcaddr):
             return
         self._donesrcaddrs.append(srcaddr)
+        
         metadata = parsePkt(pkt)
+        if metadata is None:
+            return
+        
         self.logInfo("SIP (UDP) server '%s' at %s:%s" %(metadata['headers']['User-Agent'],srcaddr[0],srcaddr[1]))
         if self._pcallback:
             self._pcallback.announceNewTarget(targets.TARGET_SIP_SERVICE(ip=srcaddr[0], 
                                                                          port=srcaddr[1], 
-                                                                         useragent=metadata['headers']['User-Agent'],))
+                                                                         ua=metadata['headers']['User-Agent'],))
             if not srcaddr[0] in [target[0] for target in self._donesrcaddrs]:
                 self._pcallback.announceNewTarget(targets.TARGET_IP(ip=srcaddr[0],))
         
     def genNextRequest(self):
-        ip, port, method = self._scaniter.next()
+        try:
+            ip, port, method = self._scaniter.next()
+        except StopIteration:
+            return None
         reqpkt = makeRequest(method,
                              ip,
                              port,
