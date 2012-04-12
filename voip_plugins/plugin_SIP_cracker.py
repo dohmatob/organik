@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import re
 import os
 import sys
@@ -88,9 +89,6 @@ class SipCracker(SipLet):
             return True
         else:
             return self._targetisalive
-
-    def mustDie(self):
-        return self._passwordcracked or self._failed or self._notfound
 
     def pktCallback(self, srcaddr, pkt):
         self._targetisalive = True

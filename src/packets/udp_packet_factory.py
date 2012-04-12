@@ -19,8 +19,6 @@ class UdpPacketFactory:
               - logInfo(msg), logDebug(msg), logWarning(msg)
                 
             - MAY (optionally) override the following methods:
-              - mustDie(), which should return true iff a special event has been experienced and we must break out of the 
-                mainLoop(..).
               - mayGenerateNextRequest(), which should returns true iff we may generate the next request yet. Typically, 
                 this method should return false if a we haven't yet placed a verdict on a test packet or the target is 
                 down
@@ -67,9 +65,6 @@ class UdpPacketFactory:
             else:
                 self._xternalip = '127.0.0.1'
         self.logDebug("using xternal ip: %s" %(self._xternalip))
-
-    def mustDie(self):
-        return False
 
     def mayGenerateNextRequest(self):
         return True

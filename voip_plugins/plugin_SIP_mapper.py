@@ -1,5 +1,5 @@
-
 #!/usr/bin/env python
+
 from argparse import ArgumentParser
 from SIPutils.packet import makeRequest, parsePkt
 from SIPutils.siplet import SipLet
