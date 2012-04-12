@@ -7,5 +7,5 @@ install:
 clean:	
 	make -C src/coreutils clean
 	make -C src/SIPutils clean
-	make -C src.packets clean
+	make -C src/packets clean
 	# make -C src/SNMPutils clean
