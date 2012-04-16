@@ -1,8 +1,10 @@
-+++++++++++
+cle+++++++++++
 + 0r94n1K +
 +++++++++++
 
-Event-driven organic spider-like auditor for mobile telephony & telco infrastructure
+Event-driven organic spider-like auditor for mobile telephony & telco infrastructure.
+
+Only supports SIP for now.
 
 ============
 INSTALLATION
@@ -13,77 +15,140 @@ make install
 USAGE
 =====
 
-example1
+example1: scan hell for SIP stuff (devices, extensions, passwords); use only 64 workers (threads, processes), and abort 
+after 4 minutes.
 
-dop@hell:~/CODE/organik$ python bin/scanner.py --plugindir voip_plugins/ --nbworkers 200
-07:19:26 kernel> -DEBUG- bootstrapped
-07:19:26 kernel> -DEBUG- principal pid    : 11160
-07:19:26 kernel> -DEBUG- number of workers: 200
-07:19:26 kernel> -DEBUG- root dir         : /home/dop/CODE/organik
-07:19:26 kernel> -DEBUG- logfile          : /home/dop/CODE/organik/var/log/scanner-3-Apr-2012-11160.log
-07:19:26 kernel> -DEBUG- plugin directory: /home/dop/CODE/organik/voip_plugins
-07:19:26 kernel> -DEBUG- plugins to load : 3
-07:19:26 kernel> -DEBUG- loadin: plugin_SIP_mapper
-07:19:26 kernel> -DEBUG- ok
-07:19:26 kernel> -DEBUG- loadin: plugin_SIP_cracker
-07:19:26 kernel> -DEBUG- ok
-07:19:26 kernel> -DEBUG- loadin: plugin_SIP_warrior
-07:19:26 kernel> -DEBUG- ok
-07:19:26 kernel> -DEBUG- loaded: 3 plugins out of 3
-07:19:26 kernel> -DEBUG- setting trap for SIGINT
-07:19:27 kernel> -DEBUG- running plugin_SIP_mapper on TARGET_IPRANGE(iprange=[''])
-07:19:27 plugin_SIP_mapper> -WARNING- couldn't bind to local address: 0.0.0.0:5060
-07:19:27 plugin_SIP_mapper> -DEBUG- bound to local address:0.0.0.0: 5061
-07:19:27 plugin_SIP_mapper> -DEBUG- using xternal ip: 127.0.0.1
-07:19:27 plugin_SIP_mapper> -INFO- SIP (UDP) server 'Twinkle/1.4.2' at 127.0.0.1:5060
-07:19:27 plugin_SIP_mapper> -DEBUG- announcing new TARGET_SIP_SERVICE(useragent=Twinkle/1.4.2, port=5060, ip=127.0.0.1)
-07:19:27 kernel> -DEBUG- running plugin_SIP_warrior on TARGET_SIP_SERVICE(useragent=Twinkle/1.4.2, port=5060, ip=127.0.0.1)
-07:19:27 plugin_SIP_warrior> -WARNING- couldn't bind to local address: 0.0.0.0:5060
-07:19:27 plugin_SIP_warrior> -WARNING- couldn't bind to local address: 0.0.0.0:5061
-07:19:27 plugin_SIP_warrior> -DEBUG- bound to local address:0.0.0.0: 5062
-07:19:27 plugin_SIP_warrior> -DEBUG- using xternal ip: 127.0.0.1
-07:19:27 plugin_SIP_mapper> -DEBUG- recv'd our own pkt ..
-07:19:27 plugin_SIP_warrior> -DEBUG- generating 'OPTIONS' test ..
-07:19:27 plugin_SIP_warrior> -DEBUG- BADUSERCODE = 404
-07:19:27 plugin_SIP_warrior> -DEBUG- recv'd SIP request 'OPTIONS sip:jack@0.0.0.0 SIP/2.0
+dop@hell:~/CODE/organik$ python bin/scanner.py --target hell --plugindir voip_plugins --donotload plugin_SIP_dummy.py --nbworkers 64 --timeout 240
+
+		--[ (c) dohmatob elvis dopgima ]--
+
+12:03:44 kernel> -DEBUG- bootstrapped.
+12:03:44 kernel> -DEBUG- principal pid    : 4170
+12:03:44 kernel> -DEBUG- number of workers: 64
+12:03:44 kernel> -DEBUG- root dir         : /home/dop/CODE/organik
+12:03:44 kernel> -DEBUG- logfile          : /home/dop/CODE/organik/var/log/scanner-16-Apr-2012-4170.log
+12:03:44 kernel> -DEBUG- plugin directory : /home/dop/CODE/organik/voip_plugins
+12:03:44 kernel> -DEBUG- plugins to load  : 3
+12:03:44 kernel> -DEBUG- loadin plugin_SIP_mapper ..
+12:03:44 kernel> -DEBUG- ok.
+12:03:44 kernel> -DEBUG- loadin plugin_SIP_cracker ..
+12:03:44 kernel> -DEBUG- ok.
+12:03:44 kernel> -DEBUG- loadin plugin_SIP_warrior ..
+12:03:44 kernel> -DEBUG- ok.
+12:03:44 kernel> -DEBUG- loaded           : 3 plugin(s) out of 3
+12:03:44 kernel> -DEBUG- setting trap for SIGINT ..
+12:03:44 kernel> -DEBUG- ok.
+12:03:44 kernel> -DEBUG- setting trap for SIGALRM (timeout=240s) ..
+12:03:44 kernel> -DEBUG- ok.
+12:03:44 kernel> -DEBUG- running plugin_SIP_mapper on TARGET_IPRANGE(iprange=['hell'])
+12:03:44 plugin_SIP_mapper> -WARNING- couldn't bind to local address: 0.0.0.0:5060
+12:03:44 plugin_SIP_mapper> -DEBUG- bound to local address:0.0.0.0: 5061
+12:03:44 plugin_SIP_mapper> -DEBUG- using xternal ip: 127.0.0.1
+12:03:44 plugin_SIP_mapper> -INFO- SIP (UDP) server 'Asterisk PBX 1.8.4.4~dfsg-2ubuntu1' at 127.0.0.1:5060
+12:03:44 plugin_SIP_mapper> -DEBUG- announcing new TARGET_SIP_SERVICE(ip=127.0.0.1, ua=Asterisk PBX 1.8.4.4~dfsg-2ubuntu1, port=5060)
+12:03:44 kernel> -DEBUG- running plugin_SIP_warrior on TARGET_SIP_SERVICE(ip=127.0.0.1, ua=Asterisk PBX 1.8.4.4~dfsg-2ubuntu1, port=5060)
+12:03:44 plugin_SIP_warrior> -DEBUG- using request method 'OPTIONS'
+12:03:44 plugin_SIP_warrior> -WARNING- couldn't bind to local address: 0.0.0.0:5060
+12:03:44 plugin_SIP_warrior> -WARNING- couldn't bind to local address: 0.0.0.0:5061
+12:03:44 plugin_SIP_warrior> -DEBUG- bound to local address:0.0.0.0: 5062
+12:03:44 plugin_SIP_warrior> -DEBUG- using xternal ip: 127.0.0.1
+12:03:44 plugin_SIP_mapper> -DEBUG- recv'd our own pkt ..
+12:03:44 plugin_SIP_warrior> -DEBUG- generating test packet #1 for method 'OPTIONS' ..
+12:03:44 plugin_SIP_warrior> -DEBUG- ok. server replied test packet with 'SIP/2.0 404 Not Found'
+12:03:44 plugin_SIP_warrior> -DEBUG- setting BADUSERCODE = 404
+12:03:44 plugin_SIP_warrior> -DEBUG- recv'd SIP request 'OPTIONS sip:jack@127.0.1.1 SIP/2.0
 ' from 127.0.0.1:5061
-07:19:27 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'toor'
-07:19:27 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'superman'
-07:19:27 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '17772231419'
-07:19:27 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'terminator'
-07:19:27 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'ratatouille'
-07:19:27 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'billgates'
-07:19:27 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'root'
-07:19:27 plugin_SIP_mapper> -DEBUG- making sure no pkts are lost ..
-07:19:27 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'sip'
-07:19:27 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'SIP'
-07:19:27 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '200'
-07:19:27 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '500'
-07:19:27 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'jack'
-07:19:27 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'obama'
-07:19:27 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'binladen'
-07:19:27 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '100'
-07:19:28 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '102'
-07:19:28 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'jill'
-07:19:28 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'jackjilljack'
-07:19:28 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'jAckjilljack'
-07:19:28 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '1000'
-07:19:28 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '112'
-07:19:28 plugin_SIP_warrior> -INFO- received (success) response 'SIP/2.0 200 OK' for username 'james'
-07:19:28 plugin_SIP_warrior> -DEBUG- sending ACK ..
-07:19:28 plugin_SIP_warrior> -INFO- cracked username: james (SIP response to 'OPTIONS' request was 'SIP/2.0 200 OK')
-07:19:28 plugin_SIP_warrior> -DEBUG- announcing new TARGET_SIP_USER(username=james, useragent=Twinkle/1.4.2, authentication=noauth, port=5060, ip=127.0.0.1)
-07:19:28 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '103'
-07:19:28 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'wElcome'
-07:19:28 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '104'
-07:19:28 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'welcome'
-07:19:28 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '101'
-07:19:28 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'pingtel'
-07:19:28 plugin_SIP_warrior> -DEBUG- making sure no pkts are lost ..
-07:19:30 kernel> -DEBUG- done running plugin_SIP_mapper on TARGET_IPRANGE(iprange=[''])
-07:19:31 plugin_SIP_warrior> -INFO- cracked usernames: james
-07:19:31 kernel> -DEBUG- done running plugin_SIP_warrior on TARGET_SIP_SERVICE(useragent=Twinkle/1.4.2, port=5060, ip=127.0.0.1)
-07:19:31 kernel> -DEBUG- terminating
+12:03:44 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'toor'
+12:03:44 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'superman'
+12:03:44 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '17772231419'
+12:03:44 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'terminator'
+12:03:44 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'ratatouille'
+12:03:44 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'billgates'
+12:03:44 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'root'
+12:03:44 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'sip'
+12:03:44 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'SIP'
+12:03:44 plugin_SIP_mapper> -DEBUG- making sure no pkts are lost ..
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '200'
+12:03:45 plugin_SIP_warrior> -INFO- cracked username: 500 (response to 'OPTIONS' request was 'SIP/2.0 200 OK')
+12:03:45 plugin_SIP_warrior> -DEBUG- announcing new TARGET_SIP_USER(ip=127.0.0.1, ua=Asterisk PBX 1.8.4.4~dfsg-2ubuntu1, user=500, auth=noauth, port=5060)
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'jack'
+12:03:45 plugin_SIP_mapper> -INFO- SIP (UDP) server 'Twinkle/1.4.2' at 127.0.0.1:5070
+12:03:45 plugin_SIP_mapper> -DEBUG- announcing new TARGET_SIP_SERVICE(ip=127.0.0.1, ua=Twinkle/1.4.2, port=5070)
+12:03:45 kernel> -DEBUG- running plugin_SIP_warrior on TARGET_SIP_SERVICE(ip=127.0.0.1, ua=Twinkle/1.4.2, port=5070)
+12:03:45 plugin_SIP_warrior> -DEBUG- using request method 'OPTIONS'
+12:03:45 plugin_SIP_warrior> -WARNING- couldn't bind to local address: 0.0.0.0:5060
+12:03:45 plugin_SIP_warrior> -WARNING- couldn't bind to local address: 0.0.0.0:5061
+12:03:45 plugin_SIP_warrior> -WARNING- couldn't bind to local address: 0.0.0.0:5062
+12:03:45 plugin_SIP_warrior> -DEBUG- bound to local address:0.0.0.0: 5063
+12:03:45 plugin_SIP_warrior> -DEBUG- using xternal ip: 127.0.0.1
+12:03:45 plugin_SIP_warrior> -DEBUG- generating test packet #1 for method 'OPTIONS' ..
+12:03:45 plugin_SIP_warrior> -DEBUG- ok. server replied test packet with 'SIP/2.0 404 Not Found'
+12:03:45 plugin_SIP_warrior> -DEBUG- setting BADUSERCODE = 404
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'toor'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'obama'
+12:03:45 plugin_SIP_warrior> -INFO- cracked username: 1234 (response to 'OPTIONS' request was 'SIP/2.0 200 OK')
+12:03:45 plugin_SIP_warrior> -DEBUG- announcing new TARGET_SIP_USER(ip=127.0.0.1, ua=Asterisk PBX 1.8.4.4~dfsg-2ubuntu1, user=1234, auth=noauth, port=5060)
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '1111'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'superman'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '17772231419'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'terminator'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'ratatouille'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'billgates'
+12:03:45 plugin_SIP_warrior> -INFO- cracked username: 1235 (response to 'OPTIONS' request was 'SIP/2.0 200 OK')
+12:03:45 plugin_SIP_warrior> -DEBUG- announcing new TARGET_SIP_USER(ip=127.0.0.1, ua=Asterisk PBX 1.8.4.4~dfsg-2ubuntu1, user=1235, auth=noauth, port=5060)
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'root'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'binladen'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'sip'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '100'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'SIP'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '102'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '200'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'jill'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '500'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'jackjilljack'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'jack'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'jAckjilljack'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'obama'
+12:03:45 plugin_SIP_warrior> -INFO- cracked username: 1000 (response to 'OPTIONS' request was 'SIP/2.0 200 OK')
+12:03:45 plugin_SIP_warrior> -DEBUG- announcing new TARGET_SIP_USER(ip=127.0.0.1, ua=Asterisk PBX 1.8.4.4~dfsg-2ubuntu1, user=1000, auth=noauth, port=5060)
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '112'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'james'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '1234'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '1111'
+12:03:45 plugin_SIP_warrior> -INFO- cracked username: 600 (response to 'OPTIONS' request was 'SIP/2.0 200 OK')
+12:03:45 plugin_SIP_warrior> -DEBUG- announcing new TARGET_SIP_USER(ip=127.0.0.1, ua=Asterisk PBX 1.8.4.4~dfsg-2ubuntu1, user=600, auth=noauth, port=5060)
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '1235'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '103'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'binladen'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'wElcome'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '104'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '100'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '102'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'welcome'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '101'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'jill'
+12:03:45 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'jackjilljack'
+12:03:46 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'pingtel'
+12:03:46 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'jAckjilljack'
+12:03:46 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '1000'
+12:03:46 plugin_SIP_warrior> -DEBUG- making sure no pkts are lost ..
+12:03:46 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '112'
+12:03:46 plugin_SIP_warrior> -INFO- cracked username: james (response to 'OPTIONS' request was 'SIP/2.0 200 OK')
+12:03:46 plugin_SIP_warrior> -DEBUG- announcing new TARGET_SIP_USER(ip=127.0.0.1, ua=Twinkle/1.4.2, user=james, auth=noauth, port=5070)
+12:03:46 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '600'
+12:03:46 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '103'
+12:03:46 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'wElcome'
+12:03:46 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '104'
+12:03:46 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'welcome'
+12:03:46 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username '101'
+12:03:46 plugin_SIP_warrior> -INFO- received failure response 'SIP/2.0 404 Not Found' for username 'pingtel'
+12:03:46 plugin_SIP_warrior> -DEBUG- making sure no pkts are lost ..
+12:03:48 kernel> -DEBUG- done running plugin_SIP_mapper on TARGET_IPRANGE(iprange=['hell'])
+12:03:49 plugin_SIP_warrior> -INFO- cracked usernames: 500, 1234, 1235, 1000, 600
+12:03:49 kernel> -DEBUG- done running plugin_SIP_warrior on TARGET_SIP_SERVICE(ip=127.0.0.1, ua=Asterisk PBX 1.8.4.4~dfsg-2ubuntu1, port=5060)
+12:03:49 plugin_SIP_warrior> -INFO- cracked usernames: james
+12:03:49 kernel> -DEBUG- done running plugin_SIP_warrior on TARGET_SIP_SERVICE(ip=127.0.0.1, ua=Twinkle/1.4.2, port=5070)
+12:03:49 kernel> -DEBUG- terminating ..
 Terminated
 
 (c) h4lf-jiffie (dohmatob elvis dopgima)
